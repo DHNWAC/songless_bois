@@ -1,0 +1,255 @@
+/* Save the Fish — ocean theme */
+:root {
+  --fish-tile: 44px;
+  --fish-gap: 2px;
+  --fish-radius: 12px;
+  --fish-radius-sm: 6px;
+  --fish-water: #a8d8f0;
+  --fish-water-dark: #7cbde0;
+  --fish-coral-bg: #d4896a;
+  --fish-text: #2c3e50;
+  --fish-muted: #6a7a8a;
+  --fish-blue: #2980b9;
+  --fish-green: #27ae60;
+  --fish-orange: #e67e22;
+  --fish-red: #c0392b;
+}
+
+/* ── Layout ──────────────────────────────────────────────── */
+.fish-app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.fish-header { text-align: center; }
+
+.fish-title {
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--fish-text);
+}
+
+.fish-puzzle-num { color: var(--fish-blue); }
+
+.fish-subtitle {
+  margin-top: 4px;
+  font-size: 0.9rem;
+  color: var(--fish-muted);
+}
+
+/* ── Stats ───────────────────────────────────────────────── */
+.fish-stats {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: var(--fish-radius);
+  padding: 10px 0;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  width: 100%;
+}
+
+.fish-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+}
+
+.fish-stat-divider {
+  width: 1px;
+  height: 32px;
+  background: rgba(0,80,160,0.12);
+}
+
+.fish-stat-icon { font-size: 1.1rem; line-height: 1; }
+.fish-stat-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fish-muted);
+}
+.fish-stat-value { font-size: 1.05rem; font-weight: 700; color: var(--fish-text); }
+
+/* ── Board ───────────────────────────────────────────────── */
+.fish-board-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.fish-board {
+  display: grid;
+  grid-template-columns: repeat(10, var(--fish-tile));
+  grid-template-rows: repeat(10, var(--fish-tile));
+  gap: var(--fish-gap);
+  background: #3a7a9e;
+  border-radius: var(--fish-radius);
+  padding: var(--fish-gap);
+  box-shadow: 0 6px 24px rgba(0,80,160,0.22), inset 0 0 0 1px rgba(255,255,255,0.15);
+}
+
+/* ── Tiles ───────────────────────────────────────────────── */
+.fish-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  position: relative;
+  transition: transform 0.1s ease, filter 0.15s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.fish-tile-water { background: var(--fish-water); }
+.fish-tile-coral { background: var(--fish-coral-bg); }
+.fish-tile-has-rock { background: var(--fish-water-dark); }
+
+.fish-tile-interactive { cursor: pointer; }
+.fish-tile-interactive:hover { transform: scale(1.1); z-index: 2; filter: brightness(1.08); }
+.fish-tile-interactive:active { transform: scale(0.96); }
+
+.fish-tile-content {
+  font-size: calc(var(--fish-tile) * 0.58);
+  line-height: 1;
+  pointer-events: none;
+  display: block;
+}
+
+/* Highlights */
+.fish-tile-preview-danger {
+  background: #f4a55a !important;
+  box-shadow: inset 0 0 0 2px rgba(180,60,0,0.35);
+}
+.fish-tile-post-safe {
+  background: #6ecf8f !important;
+  box-shadow: inset 0 0 0 2px rgba(30,140,70,0.4);
+}
+.fish-tile-post-danger {
+  background: #e87060 !important;
+  box-shadow: inset 0 0 0 2px rgba(160,30,20,0.35);
+}
+
+/* ── Result card ─────────────────────────────────────────── */
+.fish-result {
+  width: 100%;
+  border-radius: var(--fish-radius);
+  padding: 20px;
+  text-align: center;
+}
+
+.fish-result-win {
+  background: linear-gradient(135deg, #c8f0d8, #a0ddb8);
+  border: 2px solid #4cad74;
+  box-shadow: 0 4px 14px rgba(76,173,116,0.25);
+}
+
+.fish-result-fail {
+  background: linear-gradient(135deg, #ffd8d8, #ffb8b8);
+  border: 2px solid #e07070;
+  box-shadow: 0 4px 14px rgba(200,80,80,0.2);
+}
+
+.fish-result-icon { font-size: 2.8rem; margin-bottom: 8px; }
+.fish-result-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 14px; }
+
+.fish-breakdown {
+  background: rgba(255,255,255,0.55);
+  border-radius: var(--fish-radius-sm);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+}
+
+.fish-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  color: var(--fish-text);
+}
+
+.fish-breakdown-penalty { color: var(--fish-red); }
+
+.fish-breakdown-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1rem;
+  font-weight: 700;
+  padding-top: 8px;
+  margin-top: 4px;
+  border-top: 1px solid rgba(0,0,0,0.12);
+}
+
+/* ── Controls ────────────────────────────────────────────── */
+.fish-controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+}
+
+.fish-btn {
+  flex: 1;
+  min-width: 90px;
+  padding: 11px 18px;
+  border: none;
+  border-radius: var(--fish-radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s ease, filter 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.fish-btn:hover { filter: brightness(1.06); }
+.fish-btn:active { transform: scale(0.97); }
+
+.fish-btn-submit { background: var(--fish-blue); color: #fff; box-shadow: 0 2px 8px rgba(41,128,185,0.35); }
+.fish-btn-reset { background: #e8edf2; color: var(--fish-text); }
+.fish-btn-preview { background: var(--fish-orange); color: #fff; }
+.fish-btn-preview.active { box-shadow: 0 0 0 3px rgba(230,126,34,0.4); }
+.fish-btn-share { background: var(--fish-green); color: #fff; box-shadow: 0 2px 8px rgba(39,174,96,0.35); }
+
+/* ── Legend ──────────────────────────────────────────────── */
+.fish-legend {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 20px;
+  background: #fff;
+  border-radius: var(--fish-radius);
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  width: 100%;
+}
+
+.fish-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--fish-muted);
+}
+
+.fish-legend-item span { font-size: 1rem; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 500px) {
+  :root { --fish-tile: 34px; }
+  .fish-title { font-size: 1.45rem; }
+  .fish-btn { padding: 10px 12px; font-size: 0.825rem; min-width: 70px; }
+}
+
+@media (max-width: 380px) {
+  :root { --fish-tile: 28px; --fish-gap: 1px; }
+  .fish-legend { grid-template-columns: 1fr; }
+}

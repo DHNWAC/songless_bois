@@ -1,3 +1,29 @@
+# Jimsengdle
+
+Daily games platform for the boys. First game: **Jimsongdle** — guess the song from a clip.
+
+## Song Seeding
+
+Songs are pre-seeded per day using `scripts/seed-songs.ts`. It calls iTunes (metadata) and YouTube (video ID) for each song.
+
+**iTunes rate limit: ~20 req/min per IP.** Do NOT use a VPN. If rate limited:
+
+1. Stop the script completely
+2. Wait 15–20 minutes for the IP to cool down
+3. Re-run from the date it failed:
+
+```powershell
+npx tsx scripts/seed-songs.ts --start=YYYY-MM-DD --days=100
+```
+
+Options:
+- `--start=YYYY-MM-DD` — date to seed from (default: today)
+- `--days=N` — number of days to seed (default: 1)
+
+The script upserts — safe to re-run, won't duplicate existing days.
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
