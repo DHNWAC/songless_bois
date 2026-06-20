@@ -13,7 +13,7 @@ const GAMES = [
     href: '/play',
     active: true,
   },
-  { id: 'game2', name: 'Save the Fish', description: 'Place rocks to protect the fish from the shark', emoji: '🐟', href: '/fish', active: false },
+  { id: 'game2', name: 'Save the Fish', description: 'Place rocks to protect the fish from the shark', emoji: '🐟', href: '/fish', active: true },
   { id: 'game3', name: 'Game 3', description: 'Coming soon', emoji: '🎮', href: null, active: false },
   { id: 'game4', name: 'Game 4', description: 'Coming soon', emoji: '🎮', href: null, active: false },
   { id: 'game5', name: 'Game 5', description: 'Coming soon', emoji: '🎮', href: null, active: false },
