@@ -2,26 +2,35 @@
 
 import { TileType } from '@/lib/fish/puzzle';
 
-export type TileHighlight = 'none' | 'preview-danger' | 'post-safe' | 'post-danger';
+export type TileHighlight = 'none' | 'hint' | 'post-safe' | 'post-danger';
 
 interface TileProps {
   type: TileType;
   hasRock: boolean;
+  item?: 'bonus_fish' | 'treasure' | 'jellyfish';
+  isShark: boolean;
+  sharkAnimKey: number;
   highlight: TileHighlight;
   canInteract: boolean;
   onClick: () => void;
 }
 
-const EMOJI: Partial<Record<TileType, string>> = {
-  coral: '🪸',
-  fish: '🐟',
-  shark: '🦈',
+const ITEM_EMOJI: Record<string, string> = {
   bonus_fish: '🐠',
   treasure: '🐚',
   jellyfish: '🪼',
 };
 
-export default function Tile({ type, hasRock, highlight, canInteract, onClick }: TileProps) {
+export default function Tile({
+  type,
+  hasRock,
+  item,
+  isShark,
+  sharkAnimKey,
+  highlight,
+  canInteract,
+  onClick,
+}: TileProps) {
   const classes = [
     'fish-tile',
     type === 'coral' ? 'fish-tile-coral' : 'fish-tile-water',
@@ -32,11 +41,25 @@ export default function Tile({ type, hasRock, highlight, canInteract, onClick }:
     .filter(Boolean)
     .join(' ');
 
-  const content = hasRock ? '🪨' : (EMOJI[type] ?? '');
+  let content = '';
+  if (hasRock) content = '🪨';
+  else if (isShark) content = '🦈';
+  else if (item) content = ITEM_EMOJI[item];
+  else if (type === 'coral') content = '🪸';
 
   return (
-    <div className={classes} onClick={canInteract ? onClick : undefined} role={canInteract ? 'button' : undefined}>
-      <span className="fish-tile-content">{content}</span>
+    <div
+      className={classes}
+      onClick={canInteract ? onClick : undefined}
+      role={canInteract ? 'button' : undefined}
+    >
+      <span
+        className="fish-tile-content"
+        key={isShark ? sharkAnimKey : undefined}
+        style={isShark ? { animation: 'shark-move 0.18s ease-out' } : undefined}
+      >
+        {content}
+      </span>
     </div>
   );
 }

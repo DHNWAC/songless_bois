@@ -81,3 +81,29 @@ exception when duplicate_object then null; end $$;
 do $$ begin
   create policy "Users can insert own results" on public.game_results for insert with check (auth.uid() = user_id);
 exception when duplicate_object then null; end $$;
+
+-- Fish scores (one best score per user per daily seed)
+create table if not exists public.fish_scores (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  seed integer not null,
+  score integer not null,
+  moves integer not null,
+  time_ms integer not null,
+  created_at timestamptz default now() not null,
+  unique (user_id, seed)
+);
+
+alter table public.fish_scores enable row level security;
+
+do $$ begin
+  create policy "Anyone authenticated can view fish scores" on public.fish_scores for select using (auth.role() = 'authenticated');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "Users can insert own fish scores" on public.fish_scores for insert with check (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create policy "Users can update own fish scores" on public.fish_scores for update using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;

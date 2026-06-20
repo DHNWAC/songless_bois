@@ -1,57 +1,101 @@
-/* Save the Fish — ocean theme */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+/* ═══════════════════════════════════════════════════════════
+   PIXEL PALETTE
+   ═══════════════════════════════════════════════════════════ */
 :root {
-  --fish-tile: 44px;
-  --fish-gap: 2px;
-  --fish-radius: 12px;
-  --fish-radius-sm: 6px;
-  --fish-water: #a8d8f0;
-  --fish-water-dark: #7cbde0;
-  --fish-coral-bg: #d4896a;
-  --fish-text: #2c3e50;
-  --fish-muted: #6a7a8a;
-  --fish-blue: #2980b9;
-  --fish-green: #27ae60;
-  --fish-orange: #e67e22;
-  --fish-red: #c0392b;
+  --fish-tile: 38px;
+  --fish-gap:  2px;
+
+  --px-bg:        #1a4a0a;
+  --px-grass:     #3d7a22;
+  --px-grass-hi:  #52a02e;
+  --px-wall:      #3a5f8e;
+  --px-wall-hi:   #5c82b8;
+  --px-wall-sh:   #1e3a5c;
+  --px-dirt:      #8b4010;
+  --px-dirt-hi:   #c06020;
+  --px-stone:     #686878;
+  --px-stone-hi:  #9090a8;
+  --px-stone-sh:  #363644;
+  --px-gold:      #e8c840;
+  --px-white:     #f4f0e8;
+  --px-red:       #c84040;
+  --px-green-ok:  #40b060;
+  --px-orange:    #e87820;
 }
 
-/* ── Layout ──────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   PAGE BACKGROUND — animated grass
+   ═══════════════════════════════════════════════════════════ */
+.fish-main {
+  font-family: 'Press Start 2P', monospace;
+  background-color: var(--px-bg);
+  background-image:
+    repeating-linear-gradient(
+      -52deg,
+      transparent 0px,
+      transparent 15px,
+      rgba(255,255,255,0.038) 15px,
+      rgba(255,255,255,0.038) 16px,
+      transparent 16px,
+      transparent 19px,
+      rgba(255,255,255,0.038) 19px,
+      rgba(255,255,255,0.038) 20px
+    );
+  background-size: 36px 36px;
+  animation: page-grass 9s linear infinite;
+}
+
+@keyframes page-grass {
+  from { background-position: 0 0; }
+  to   { background-position: 36px 36px; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   APP LAYOUT
+   ═══════════════════════════════════════════════════════════ */
 .fish-app {
-  max-width: 520px;
+  max-width: 560px;
   margin: 0 auto;
   padding: 24px 16px 56px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 18px;
+  gap: 20px;
+  font-family: 'Press Start 2P', monospace;
 }
 
-/* ── Header ──────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════════════════════════ */
 .fish-header { text-align: center; }
 
 .fish-title {
-  font-size: 1.85rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: var(--fish-text);
+  font-size: 1.35rem;
+  font-weight: 400;
+  color: var(--px-white);
+  text-shadow: 3px 3px 0 rgba(0,0,0,0.65);
+  line-height: 1.5;
 }
-
-.fish-puzzle-num { color: var(--fish-blue); }
 
 .fish-subtitle {
-  margin-top: 4px;
-  font-size: 0.9rem;
-  color: var(--fish-muted);
+  margin-top: 8px;
+  font-size: 0.52rem;
+  color: var(--px-gold);
+  letter-spacing: 0.05em;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.55);
 }
 
-/* ── Stats ───────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   STATS BAR
+   ═══════════════════════════════════════════════════════════ */
 .fish-stats {
   display: flex;
   align-items: center;
-  background: #fff;
-  border-radius: var(--fish-radius);
-  padding: 10px 0;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  background: rgba(0,0,0,0.45);
+  border: 2px solid rgba(255,255,255,0.1);
+  padding: 12px 0;
   width: 100%;
 }
 
@@ -59,137 +103,259 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 5px;
   flex: 1;
 }
 
 .fish-stat-divider {
-  width: 1px;
-  height: 32px;
-  background: rgba(0,80,160,0.12);
+  width: 2px;
+  height: 28px;
+  background: rgba(255,255,255,0.15);
 }
 
-.fish-stat-icon { font-size: 1.1rem; line-height: 1; }
+.fish-stat-icon { font-size: 0.9rem; line-height: 1; }
+
 .fish-stat-label {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--fish-muted);
+  font-size: 0.42rem;
+  color: var(--px-gold);
+  letter-spacing: 0.08em;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
 }
-.fish-stat-value { font-size: 1.05rem; font-weight: 700; color: var(--fish-text); }
 
-/* ── Board ───────────────────────────────────────────────── */
+.fish-stat-value {
+  font-size: 0.78rem;
+  color: var(--px-white);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+}
+
+.fish-stat-lives {
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BOARD FRAME
+   ═══════════════════════════════════════════════════════════ */
 .fish-board-wrap {
   width: 100%;
   display: flex;
   justify-content: center;
+  overflow-x: auto;
 }
 
+/* Hex offset flex layout */
 .fish-board {
-  display: grid;
-  grid-template-columns: repeat(10, var(--fish-tile));
-  grid-template-rows: repeat(10, var(--fish-tile));
+  display: flex;
+  flex-direction: column;
   gap: var(--fish-gap);
-  background: #3a7a9e;
-  border-radius: var(--fish-radius);
+  background: var(--px-wall-sh);
   padding: var(--fish-gap);
-  box-shadow: 0 6px 24px rgba(0,80,160,0.22), inset 0 0 0 1px rgba(255,255,255,0.15);
+  border-top:    4px solid var(--px-wall-hi);
+  border-left:   4px solid var(--px-wall-hi);
+  border-right:  4px solid var(--px-wall-sh);
+  border-bottom: 6px solid var(--px-dirt);
+  box-shadow:
+    0 0 0 2px var(--px-wall-sh),
+    0 8px 0 0px var(--px-dirt-hi),
+    0 12px 28px rgba(0,0,0,0.7);
 }
 
-/* ── Tiles ───────────────────────────────────────────────── */
+.fish-row {
+  display: flex;
+  gap: var(--fish-gap);
+}
+
+/* Odd rows shifted right by half a tile — hex offset */
+.fish-row-odd {
+  margin-left: calc(var(--fish-tile) / 2 + var(--fish-gap) / 2);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TILES — base
+   ═══════════════════════════════════════════════════════════ */
 .fish-tile {
+  width:  var(--fish-tile);
+  height: var(--fish-tile);
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
   position: relative;
-  transition: transform 0.1s ease, filter 0.15s ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  image-rendering: pixelated;
 }
 
-.fish-tile-water { background: var(--fish-water); }
-.fish-tile-coral { background: var(--fish-coral-bg); }
-.fish-tile-has-rock { background: var(--fish-water-dark); }
+/* ── Water / grass ─────────────────────────────────────────── */
+.fish-tile-water {
+  background-color: var(--px-grass);
+  background-image:
+    repeating-linear-gradient(90deg,
+      transparent 0px, transparent 10px,
+      rgba(0,0,0,0.055) 10px, rgba(0,0,0,0.055) 11px),
+    repeating-linear-gradient(0deg,
+      transparent 0px, transparent 10px,
+      rgba(0,0,0,0.055) 10px, rgba(0,0,0,0.055) 11px);
+  animation: grass-shimmer 5s ease-in-out infinite;
+}
 
+@keyframes grass-shimmer {
+  0%,  100% { background-color: var(--px-grass); }
+  50%        { background-color: var(--px-grass-hi); }
+}
+
+.fish-tile-water:nth-child(7n+1) { animation-delay: 0s; }
+.fish-tile-water:nth-child(7n+2) { animation-delay: 0.72s; }
+.fish-tile-water:nth-child(7n+3) { animation-delay: 1.43s; }
+.fish-tile-water:nth-child(7n+4) { animation-delay: 2.14s; }
+.fish-tile-water:nth-child(7n+5) { animation-delay: 2.86s; }
+.fish-tile-water:nth-child(7n+6) { animation-delay: 3.57s; }
+.fish-tile-water:nth-child(7n)   { animation-delay: 4.29s; }
+
+/* ── Coral / wall ──────────────────────────────────────────── */
+.fish-tile-coral {
+  background-color: var(--px-wall);
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0px, transparent 4px,
+    rgba(255,255,255,0.07) 4px, rgba(255,255,255,0.07) 5px
+  );
+  box-shadow:
+    inset 3px  3px 0 var(--px-wall-hi),
+    inset -3px -3px 0 var(--px-wall-sh);
+}
+
+/* ── Rock (placed by player) ───────────────────────────────── */
+.fish-tile-has-rock {
+  background-color: var(--px-stone) !important;
+  background-image: none !important;
+  box-shadow:
+    inset  3px  3px 0 var(--px-stone-hi),
+    inset -3px -3px 0 var(--px-stone-sh) !important;
+  animation: none !important;
+}
+
+/* ── Interactive ───────────────────────────────────────────── */
 .fish-tile-interactive { cursor: pointer; }
-.fish-tile-interactive:hover { transform: scale(1.1); z-index: 2; filter: brightness(1.08); }
-.fish-tile-interactive:active { transform: scale(0.96); }
+.fish-tile-interactive:hover  { filter: brightness(1.22); z-index: 2; }
+.fish-tile-interactive:active { filter: brightness(0.88); }
 
+/* ── Emoji content ─────────────────────────────────────────── */
 .fish-tile-content {
-  font-size: calc(var(--fish-tile) * 0.58);
+  font-size: calc(var(--fish-tile) * 0.54);
   line-height: 1;
   pointer-events: none;
   display: block;
 }
 
-/* Highlights */
-.fish-tile-preview-danger {
-  background: #f4a55a !important;
-  box-shadow: inset 0 0 0 2px rgba(180,60,0,0.35);
-}
-.fish-tile-post-safe {
-  background: #6ecf8f !important;
-  box-shadow: inset 0 0 0 2px rgba(30,140,70,0.4);
-}
-.fish-tile-post-danger {
-  background: #e87060 !important;
-  box-shadow: inset 0 0 0 2px rgba(160,30,20,0.35);
+/* ── Shark move animation ──────────────────────────────────── */
+@keyframes shark-move {
+  0%   { opacity: 0; transform: scale(0.6); }
+  60%  { opacity: 1; transform: scale(1.15); }
+  100% { transform: scale(1); }
 }
 
-/* ── Result card ─────────────────────────────────────────── */
+/* ── Highlight overlays ────────────────────────────────────── */
+.fish-tile-hint {
+  background-color: #8060c0 !important;
+  background-image: none !important;
+  box-shadow:
+    inset  3px  3px 0 #a080e0,
+    inset -3px -3px 0 #402080 !important;
+  animation: none !important;
+}
+
+.fish-tile-post-safe {
+  background-color: #287840 !important;
+  background-image: none !important;
+  box-shadow:
+    inset  3px  3px 0 #44a860,
+    inset -3px -3px 0 #145028 !important;
+  animation: none !important;
+}
+
+.fish-tile-post-danger {
+  background-color: #a02828 !important;
+  background-image: none !important;
+  box-shadow:
+    inset  3px  3px 0 #c84848,
+    inset -3px -3px 0 #601414 !important;
+  animation: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESULT CARD
+   ═══════════════════════════════════════════════════════════ */
 .fish-result {
   width: 100%;
-  border-radius: var(--fish-radius);
   padding: 20px;
   text-align: center;
 }
 
 .fish-result-win {
-  background: linear-gradient(135deg, #c8f0d8, #a0ddb8);
-  border: 2px solid #4cad74;
-  box-shadow: 0 4px 14px rgba(76,173,116,0.25);
+  background: #12381a;
+  border: 4px solid var(--px-green-ok);
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.65);
 }
 
 .fish-result-fail {
-  background: linear-gradient(135deg, #ffd8d8, #ffb8b8);
-  border: 2px solid #e07070;
-  box-shadow: 0 4px 14px rgba(200,80,80,0.2);
+  background: #3c1010;
+  border: 4px solid var(--px-red);
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.65);
 }
 
-.fish-result-icon { font-size: 2.8rem; margin-bottom: 8px; }
-.fish-result-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 14px; }
+.fish-result-icon { font-size: 2.4rem; margin-bottom: 12px; }
+
+.fish-result-lives {
+  margin-top: 10px;
+  font-size: 0.52rem;
+  color: var(--px-gold);
+  letter-spacing: 2px;
+}
+
+.fish-result-title {
+  font-size: 0.72rem;
+  font-weight: 400;
+  margin-bottom: 16px;
+  color: var(--px-white);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.55);
+  line-height: 1.7;
+}
 
 .fish-breakdown {
-  background: rgba(255,255,255,0.55);
-  border-radius: var(--fish-radius-sm);
+  background: rgba(0,0,0,0.38);
+  border: 2px solid rgba(255,255,255,0.1);
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   text-align: left;
 }
 
 .fish-breakdown-row {
   display: flex;
   justify-content: space-between;
-  font-size: 0.875rem;
-  color: var(--fish-text);
+  font-size: 0.52rem;
+  color: var(--px-white);
+  line-height: 1.7;
 }
 
-.fish-breakdown-penalty { color: var(--fish-red); }
+.fish-breakdown-penalty { color: #f07878; }
 
 .fish-breakdown-total {
   display: flex;
   justify-content: space-between;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 0.68rem;
+  color: var(--px-gold);
   padding-top: 8px;
   margin-top: 4px;
-  border-top: 1px solid rgba(0,0,0,0.12);
+  border-top: 2px solid rgba(255,255,255,0.18);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
 }
 
-/* ── Controls ────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   PIXEL ART BUTTONS
+   ═══════════════════════════════════════════════════════════ */
 .fish-controls {
   display: flex;
   gap: 10px;
@@ -200,56 +366,96 @@
 
 .fish-btn {
   flex: 1;
-  min-width: 90px;
-  padding: 11px 18px;
+  min-width: 80px;
+  padding: 13px 14px;
   border: none;
-  border-radius: var(--fish-radius-sm);
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
   cursor: pointer;
-  transition: transform 0.1s ease, filter 0.1s ease;
+  line-height: 1.4;
   -webkit-tap-highlight-color: transparent;
+  border-top:    3px solid rgba(255,255,255,0.28);
+  border-left:   3px solid rgba(255,255,255,0.28);
+  border-right:  3px solid rgba(0,0,0,0.45);
+  border-bottom: 3px solid rgba(0,0,0,0.45);
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.55);
+  transition: filter 0.08s;
 }
 
-.fish-btn:hover { filter: brightness(1.06); }
-.fish-btn:active { transform: scale(0.97); }
+.fish-btn:hover  { filter: brightness(1.12); }
 
-.fish-btn-submit { background: var(--fish-blue); color: #fff; box-shadow: 0 2px 8px rgba(41,128,185,0.35); }
-.fish-btn-reset { background: #e8edf2; color: var(--fish-text); }
-.fish-btn-preview { background: var(--fish-orange); color: #fff; }
-.fish-btn-preview.active { box-shadow: 0 0 0 3px rgba(230,126,34,0.4); }
-.fish-btn-share { background: var(--fish-green); color: #fff; box-shadow: 0 2px 8px rgba(39,174,96,0.35); }
+.fish-btn:active {
+  border-top:    3px solid rgba(0,0,0,0.35);
+  border-left:   3px solid rgba(0,0,0,0.35);
+  border-right:  3px solid rgba(255,255,255,0.2);
+  border-bottom: 3px solid rgba(255,255,255,0.2);
+  box-shadow: 1px 1px 0 rgba(0,0,0,0.55);
+  transform: translate(2px, 2px);
+}
 
-/* ── Legend ──────────────────────────────────────────────── */
+.fish-btn-reset  { background: #3a3a4a; color: var(--px-white); }
+.fish-btn-daily  { background: #185a9a; color: var(--px-white); }
+.fish-btn-hint   { background: #503080; color: var(--px-white); }
+.fish-btn-hint.active {
+  background: #7040b0;
+  box-shadow: 0 0 0 3px #a080e0, 3px 3px 0 rgba(0,0,0,0.55);
+}
+.fish-btn-ai          { background: #1a5a5a; color: var(--px-white); }
+.fish-btn-admin-reset { background: #5a1a1a; color: var(--px-white); }
+.fish-btn-ai.active {
+  background: #2a8080;
+  box-shadow: 0 0 0 3px #40c0c0, 3px 3px 0 rgba(0,0,0,0.55);
+}
+.fish-btn-share  { background: #166430; color: var(--px-white); }
+
+.fish-solve-banner {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(26, 90, 90, 0.3);
+  border: 2px solid #40c0c0;
+  color: #80e0e0;
+  font-size: 0.52rem;
+  text-align: center;
+  line-height: 1.7;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LEGEND
+   ═══════════════════════════════════════════════════════════ */
 .fish-legend {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 6px 20px;
-  background: #fff;
-  border-radius: var(--fish-radius);
-  padding: 12px 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  gap: 8px 24px;
+  background: rgba(0,0,0,0.42);
+  border: 2px solid rgba(255,255,255,0.1);
+  padding: 14px 16px;
   width: 100%;
 }
 
 .fish-legend-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.8rem;
-  color: var(--fish-muted);
+  gap: 8px;
+  font-size: 0.48rem;
+  color: var(--px-gold);
+  line-height: 1.7;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
 }
 
-.fish-legend-item span { font-size: 1rem; }
+.fish-legend-item span { font-size: 0.9rem; }
 
-/* ── Responsive ──────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════ */
 @media (max-width: 500px) {
-  :root { --fish-tile: 34px; }
-  .fish-title { font-size: 1.45rem; }
-  .fish-btn { padding: 10px 12px; font-size: 0.825rem; min-width: 70px; }
+  :root { --fish-tile: 28px; }
+  .fish-title    { font-size: 1rem; }
+  .fish-subtitle { font-size: 0.43rem; }
+  .fish-btn      { padding: 11px 8px; font-size: 0.42rem; min-width: 60px; }
 }
 
 @media (max-width: 380px) {
-  :root { --fish-tile: 28px; --fish-gap: 1px; }
-  .fish-legend { grid-template-columns: 1fr; }
+  :root { --fish-tile: 24px; --fish-gap: 1px; }
+  .fish-title   { font-size: 0.82rem; }
+  .fish-legend  { grid-template-columns: 1fr; }
 }

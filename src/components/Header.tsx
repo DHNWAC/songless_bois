@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Image from 'next/image'
 import Link from 'next/link'
-import AdminResetButton from './AdminResetButton'
 
 const ADMIN_EMAIL = 'daniel4.cordeiro@gmail.com'
 
@@ -27,7 +26,6 @@ export default async function Header() {
       </Link>
 
       <div className="flex items-center gap-3">
-        {isAdmin && <AdminResetButton />}
 
         <div className="text-right hidden sm:block">
           <p className="text-zinc-300 text-xs font-medium leading-none">{name}</p>

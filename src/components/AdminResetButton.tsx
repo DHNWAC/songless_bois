@@ -2,6 +2,7 @@
 
 export default function AdminResetButton() {
   const handleReset = async () => {
+    if (!confirm("Reset YOUR Jimsengdle results for today? This cannot be undone.")) return
     await fetch('/api/admin/reset-today', { method: 'POST' })
     window.location.href = '/play'
   }
@@ -10,9 +11,9 @@ export default function AdminResetButton() {
     <button
       onClick={handleReset}
       className="text-xs text-zinc-500 hover:text-red-400 transition-colors border border-zinc-800 hover:border-red-900 rounded px-2 py-1"
-      title="Reset today's results"
+      title="Reset today's Jimsengdle results (admin only)"
     >
-      🔄 Reset
+      🔄 Reset DB
     </button>
   )
 }

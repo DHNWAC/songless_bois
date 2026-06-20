@@ -4,6 +4,7 @@ import { getDailyGenres, getDayNumber } from '@/lib/deezer'
 import Header from '@/components/Header'
 import GenrePicker from '@/components/GenrePicker'
 import AdminDateNav from '@/components/AdminDateNav'
+import AdminResetButton from '@/components/AdminResetButton'
 
 const ADMIN_EMAIL = 'daniel4.cordeiro@gmail.com'
 
@@ -88,7 +89,12 @@ export default async function PlayPage({
               <p className="text-zinc-700 text-xs uppercase tracking-[0.2em] mb-0.5">Day {dayNumber}</p>
               <h1 className="text-white font-black text-2xl tracking-tight leading-none">Jimsongdle</h1>
             </div>
-            {isAdmin && <AdminDateNav currentDate={activeDate} today={today} />}
+            {isAdmin && (
+              <div className="flex items-center gap-2">
+                <AdminDateNav currentDate={activeDate} today={today} />
+                <AdminResetButton />
+              </div>
+            )}
           </div>
         </div>
         <GenrePicker genreData={genreData} dailyGenres={seededGenres} isAdmin={isAdmin} />
