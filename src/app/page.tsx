@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { signInWithGoogle } from './actions/auth'
 import Header from '@/components/Header'
+import InAppBrowserGuard from '@/components/InAppBrowserGuard'
 
 const GAMES = [
   {
@@ -32,6 +33,7 @@ export default async function Home({
   if (!user) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden">
+        <InAppBrowserGuard />
         {/* Subtle dot grid background */}
         <div
           className="absolute inset-0 opacity-[0.03]"
