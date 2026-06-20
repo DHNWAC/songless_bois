@@ -80,7 +80,7 @@ export default function GenrePicker({ genreData, dailyGenres, isAdmin }: GenrePi
   const data = genreData[activeGenre]
 
   return (
-    <div className="flex flex-col items-center gap-6 w-full max-w-lg mx-auto">
+    <div className="flex flex-col items-center gap-3 sm:gap-6 w-full max-w-lg mx-auto">
       {/* Genre tabs */}
       <div className="flex gap-1 bg-zinc-900/50 border border-zinc-800 rounded-2xl p-1 w-full">
         {dailyGenres.map((genre, i) => {

@@ -81,9 +81,9 @@ export default async function PlayPage({
   return (
     <>
       <Header />
-      <main className="min-h-screen pt-24 pb-16 px-4">
+      <main className="min-h-screen pt-16 sm:pt-24 pb-8 sm:pb-16 px-4">
         <div className="max-w-lg mx-auto">
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-3 sm:mb-6 flex items-center justify-between">
             <div>
               <p className="text-zinc-700 text-xs uppercase tracking-[0.2em] mb-0.5">Day {dayNumber}</p>
               <h1 className="text-white font-black text-2xl tracking-tight leading-none">Jimsongdle</h1>

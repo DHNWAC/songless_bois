@@ -186,7 +186,7 @@ export default function SongGame({ challenge, existingResult, onComplete }: Song
   const isIdle = status === 'playing' && playerReady && !isPlaying
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full max-w-lg mx-auto">
+    <div className="flex flex-col items-center gap-2 sm:gap-4 w-full max-w-lg mx-auto">
       {/* Hidden YouTube player — must be off-screen at real size for YT to initialize */}
       <div ref={playerDivRef} style={{ position: 'fixed', left: '-9999px', top: '-9999px', width: '320px', height: '180px' }} aria-hidden />
 
@@ -199,7 +199,7 @@ export default function SongGame({ challenge, existingResult, onComplete }: Song
 
           if (guess === undefined) {
             return (
-              <div key={dur} className="w-full h-11 rounded-xl px-3 flex items-center border border-zinc-800/70 bg-zinc-900/20">
+              <div key={dur} className="w-full h-9 sm:h-11 rounded-xl px-3 flex items-center border border-zinc-800/70 bg-zinc-900/20">
                 <div className="flex gap-1.5">
                   {[0, 1, 2].map((d) => <div key={d} className="w-1 h-1 rounded-full bg-zinc-800" />)}
                 </div>
@@ -208,7 +208,7 @@ export default function SongGame({ challenge, existingResult, onComplete }: Song
           }
           if (isSkipped) {
             return (
-              <div key={dur} className="w-full h-11 rounded-xl px-3 flex items-center border border-zinc-800 bg-zinc-900/30 guess-enter">
+              <div key={dur} className="w-full h-9 sm:h-11 rounded-xl px-3 flex items-center border border-zinc-800 bg-zinc-900/30 guess-enter">
                 <span className="text-xs tracking-[0.18em] text-zinc-700 font-medium">SKIP</span>
               </div>
             )
@@ -217,7 +217,7 @@ export default function SongGame({ challenge, existingResult, onComplete }: Song
             return (
               <div
                 key={dur}
-                className="w-full h-11 rounded-xl px-3 flex items-center gap-2 border text-sm font-medium guess-enter"
+                className="w-full h-9 sm:h-11 rounded-xl px-3 flex items-center gap-2 border text-sm font-medium guess-enter"
                 style={{ borderColor: 'var(--accent)', backgroundColor: 'var(--accent-dim)' }}
               >
                 <span style={{ color: 'var(--accent)' }} className="text-xs">✓</span>
@@ -228,7 +228,7 @@ export default function SongGame({ challenge, existingResult, onComplete }: Song
           return (
             <div
               key={dur}
-              className="w-full h-11 rounded-xl px-3 flex items-center text-sm border border-red-900/25 bg-red-950/8 text-zinc-600 line-through guess-enter"
+              className="w-full h-9 sm:h-11 rounded-xl px-3 flex items-center text-sm border border-red-900/25 bg-red-950/8 text-zinc-600 line-through guess-enter"
             >
               <span className="truncate">{guess}</span>
             </div>
@@ -287,7 +287,7 @@ export default function SongGame({ challenge, existingResult, onComplete }: Song
       <button
         onClick={playClip}
         disabled={isPlaying || !playerReady || status !== 'playing'}
-        className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 mt-1 ${
+        className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center transition-all duration-200 ${
           isIdle ? 'play-idle hover:scale-105 active:scale-95' : 'hover:scale-105 active:scale-95 disabled:cursor-not-allowed'
         }`}
         style={{
