@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { signInWithGoogle } from './actions/auth'
 import Header from '@/components/Header'
 import InAppBrowserGuard from '@/components/InAppBrowserGuard'
+import GuestSignIn from '@/components/GuestSignIn'
 
 const GAMES = [
   {
@@ -67,15 +68,19 @@ export default async function Home({
             </p>
           )}
 
-          <form action={signInWithGoogle} className="w-full">
-            <button
-              type="submit"
-              className="w-full flex items-center justify-center gap-3 bg-white hover:bg-zinc-100 text-zinc-900 font-semibold py-3.5 px-6 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-black/40"
-            >
-              <GoogleIcon />
-              Sign in with Google
-            </button>
-          </form>
+          <div className="w-full flex flex-col gap-3">
+            <form action={signInWithGoogle} className="w-full">
+              <button
+                type="submit"
+                className="w-full flex items-center justify-center gap-3 bg-white hover:bg-zinc-100 text-zinc-900 font-semibold py-3.5 px-6 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-black/40"
+              >
+                <GoogleIcon />
+                Sign in with Google
+              </button>
+            </form>
+            <GuestSignIn />
+            <p className="text-zinc-700 text-xs text-center">Guest scores won&apos;t appear on the leaderboard</p>
+          </div>
         </div>
       </main>
     )
