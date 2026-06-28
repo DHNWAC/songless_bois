@@ -110,7 +110,10 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
     setIsPlaying(true)
     setPlayProgress(0)
     audio.currentTime = 0
-    void audio.play()
+    // Resume AudioContext first (required on iOS — user gesture unlocks it once,
+    // but the context starts suspended so we must resume before playing).
+    const resume = audioCtxRef.current ? audioCtxRef.current.resume() : Promise.resolve()
+    void resume.then(() => audio.play())
 
     const analyser = analyserRef.current
     const freq = freqDataRef.current
@@ -200,7 +203,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
   const isIdle = status === 'playing' && !isPlaying
 
   return (
-    <div className="flex flex-col items-center gap-2 sm:gap-3 w-full max-w-lg mx-auto relative">
+    <div className="flex flex-col items-center gap-1.5 w-full max-w-lg mx-auto relative">
       <audio ref={audioRef} src={song.previewUrl} preload="auto" crossOrigin="anonymous" />
 
       {/* Reactive stage glow behind everything */}
@@ -220,7 +223,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
       </p>
 
       {/* Guess rows */}
-      <div className="w-full flex flex-col gap-1.5">
+      <div className="w-full flex flex-col gap-1">
         {CLIP_DURATIONS.map((dur, i) => {
           const guess = guesses[i]
           const isCorrect = status === 'won' && i === guesses.length - 1
@@ -231,7 +234,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
             return (
               <div
                 key={dur}
-                className="w-full h-10 rounded-xl px-3 flex items-center border bg-zinc-900/20 transition-all"
+                className="w-full h-8 rounded-lg px-3 flex items-center border bg-zinc-900/20 transition-all"
                 style={{
                   borderColor: isNext ? 'rgba(255,255,255,0.12)' : 'rgba(39,39,42,0.55)',
                   boxShadow: isNext ? 'inset 0 0 0 1px rgba(255,255,255,0.04)' : 'none',
@@ -251,7 +254,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
           }
           if (isSkipped) {
             return (
-              <div key={dur} className="w-full h-10 rounded-xl px-3 flex items-center border border-zinc-800 bg-zinc-900/30 guess-enter">
+              <div key={dur} className="w-full h-8 rounded-lg px-3 flex items-center border border-zinc-800 bg-zinc-900/30 guess-enter">
                 <span className="text-xs tracking-[0.18em] text-zinc-700 font-medium">SKIP</span>
               </div>
             )
@@ -260,7 +263,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
             return (
               <div
                 key={dur}
-                className="correct-sweep w-full h-10 rounded-xl px-3 flex items-center gap-2 border text-sm font-medium guess-enter"
+                className="correct-sweep w-full h-8 rounded-lg px-3 flex items-center gap-2 border text-sm font-medium guess-enter"
                 style={{ borderColor: 'var(--accent)', boxShadow: '0 0 20px -4px var(--accent-glow)' }}
               >
                 <span style={{ color: 'var(--accent)' }} className="text-sm">✓</span>
@@ -271,7 +274,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
           return (
             <div
               key={dur}
-              className="w-full h-10 rounded-xl px-3 flex items-center gap-2 text-sm border border-red-900/30 bg-red-950/10 text-zinc-600 line-through guess-enter"
+              className="w-full h-8 rounded-lg px-3 flex items-center gap-2 text-sm border border-red-900/30 bg-red-950/10 text-zinc-600 line-through guess-enter"
             >
               <span className="text-red-900/70 not-italic no-underline">✕</span>
               <span className="truncate">{guess}</span>
@@ -324,7 +327,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
       )}
 
       {/* Live equalizer visualizer */}
-      <div className="w-full flex items-end justify-center gap-[2px] h-12 px-1">
+      <div className="w-full flex items-end justify-center gap-[2px] h-8 px-1">
         {levels.map((lvl, i) => (
           <div
             key={i}
@@ -346,7 +349,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
 
       {/* Progress segments */}
       <div className="w-full">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-1">
           <span className="text-zinc-600 text-xs font-mono">
             {clipDuration < 1 ? `${clipDuration * 1000}ms` : `${clipDuration}s`}
           </span>
@@ -380,7 +383,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
       </div>
 
       {/* Play button with sonar rings */}
-      <div className="relative flex items-center justify-center my-1">
+      <div className="relative flex items-center justify-center">
         {isPlaying && (
           <>
             <span className="sonar-ring absolute inset-0 rounded-full border" style={{ borderColor: 'var(--accent)' }} />
