@@ -25,6 +25,8 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
   const [status, setStatus] = useState<GameStatus>('playing')
   const [clipIndex, setClipIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [isFading, setIsFading] = useState(false)
+  const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [query, setQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [selectedTrack, setSelectedTrack] = useState<SearchResult | null>(null)
@@ -87,8 +89,13 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
     const audio = audioRef.current
     if (audio) { audio.pause(); audio.currentTime = 0 }
     setIsPlaying(false)
-    setPlayProgress(0)
-    resetVisuals()
+    setIsFading(true)
+    if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current)
+    fadeTimerRef.current = setTimeout(() => {
+      setIsFading(false)
+      setPlayProgress(0)
+      resetVisuals()
+    }, 800)
   }, [resetVisuals])
 
   useEffect(() => () => {
@@ -199,10 +206,10 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
       {/* Reactive stage glow behind everything */}
       <div className="pointer-events-none fixed inset-0 -z-10 flex items-center justify-center overflow-hidden">
         <div
-          className={`w-[80vmax] h-[80vmax] rounded-full blur-[120px] transition-opacity duration-300 ${isPlaying ? 'stage-pulse' : ''}`}
+          className={`w-[80vmax] h-[80vmax] rounded-full blur-[120px] ${isPlaying ? 'transition-opacity duration-300 stage-pulse' : 'transition-opacity duration-700'}`}
           style={{
             background: 'radial-gradient(circle, var(--accent), transparent 60%)',
-            opacity: isPlaying ? 0.08 + energy * 0.22 : 0.05,
+            opacity: isPlaying ? 0.08 + energy * 0.22 : isFading ? 0.02 : 0.05,
             transform: `scale(${1 + energy * 0.15})`,
           }}
         />
@@ -321,15 +328,15 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
         {levels.map((lvl, i) => (
           <div
             key={i}
-            className={`flex-1 rounded-full transition-[height] duration-75 ${isPlaying ? 'eq-bar' : ''}`}
+            className={`flex-1 rounded-full ${isPlaying ? 'transition-[height] duration-75 eq-bar' : 'transition-[height,opacity,background] duration-700'}`}
             style={{
               height: `${6 + lvl * 92}%`,
               maxWidth: 7,
               background: isPlaying
                 ? `linear-gradient(to top, var(--accent), ${lvl > 0.6 ? '#fef08a' : 'var(--accent-hover)'})`
-                : '#27272a',
+                : isFading ? `linear-gradient(to top, var(--accent), var(--accent-hover))` : '#27272a',
               boxShadow: isPlaying && lvl > 0.3 ? `0 0 8px var(--accent-glow)` : 'none',
-              opacity: isPlaying ? 0.5 + lvl * 0.5 : 0.5,
+              opacity: isPlaying ? 0.5 + lvl * 0.5 : isFading ? 0 : 0.5,
               ['--eq-dur' as string]: `${0.4 + (i % 5) * 0.08}s`,
               ['--eq-delay' as string]: `${(i % 7) * 0.04}s`,
             }}

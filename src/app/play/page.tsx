@@ -152,7 +152,7 @@ export default function PlayPage() {
           </div>
           <p className="text-white font-black text-xl">You&apos;re done for today!</p>
           <p className="text-zinc-500 text-sm max-w-xs">You played all {SONGS_PER_DAY} songs for Jimsongdle #{dayNumber}.</p>
-          <p className="text-zinc-600 text-xs">Come back tomorrow at midnight AEST for new songs.</p>
+          <p className="text-zinc-600 text-xs">Come back tomorrow for new songs.</p>
           <div className="flex flex-col gap-2 mt-2 w-full max-w-xs">
             <Link
               href="/case-open"

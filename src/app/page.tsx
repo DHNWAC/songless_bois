@@ -76,11 +76,8 @@ export default function LandingPage() {
               <div key={i} className="w-1 rounded-full bg-white" style={{ height: `${h * 2}px` }} />
             ))}
           </div>
-          <p className="text-zinc-600 text-xs uppercase tracking-[0.3em] font-semibold mb-2">A fresh batch every day</p>
           <h1 className="text-5xl sm:text-6xl font-black tracking-tight text-white leading-[0.95]">
-            Daily
-            <br />
-            <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(120deg, #22c55e, #e4ae39)' }}>Games</span>
+            Jimsengdle
           </h1>
         </div>
 
@@ -157,9 +154,6 @@ export default function LandingPage() {
           })}
         </div>
 
-        <p className="text-center text-zinc-700 text-xs fade-up" style={{ animationDelay: '500ms' }}>
-          New songs &amp; resets daily at midnight AEST
-        </p>
       </div>
     </main>
   )

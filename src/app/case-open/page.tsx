@@ -1,16 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import {
   loadCaseState,
   saveCaseState,
   loadGameContributions,
   contributionsToMultiplier,
-  resetCaseState,
-  resetDailyState,
-  resetGameContributions,
   type GameContribution,
 } from '@/lib/daily'
 
@@ -62,51 +58,167 @@ function buildStrip(winner: Rarity, multiplier: number) {
 }
 
 // Tiny synth sounds via Web Audio
-function playTick(ctx: AudioContext) {
+function playTick(ctx: AudioContext, pitch = 1) {
   const o = ctx.createOscillator()
   const g = ctx.createGain()
   o.connect(g); g.connect(ctx.destination)
-  o.frequency.value = 440 + Math.random() * 200
+  o.frequency.value = (440 + Math.random() * 200) * pitch
   g.gain.setValueAtTime(0.08, ctx.currentTime)
   g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05)
   o.start(); o.stop(ctx.currentTime + 0.05)
 }
 
-function playReveal(ctx: AudioContext, color: string) {
+// Rank 0-1: simple two-note chime
+function playRevealCommon(ctx: AudioContext, color: string) {
   const freqs: Record<string, number[]> = {
     '#4b69ff': [330, 440],
     '#8847ff': [370, 494],
-    '#d32ce6': [415, 554],
-    '#eb4b4b': [494, 659],
-    '#e4ae39': [523, 784, 1047],
   }
-  const notes = freqs[color] ?? [440, 554]
+  const notes = freqs[color] ?? [330, 440]
   notes.forEach((freq, i) => {
-    const o = ctx.createOscillator()
-    const g = ctx.createGain()
+    const o = ctx.createOscillator(); const g = ctx.createGain()
     o.connect(g); g.connect(ctx.destination)
-    o.type = 'sine'
-    o.frequency.value = freq
-    const t = ctx.currentTime + i * 0.12
+    o.type = 'sine'; o.frequency.value = freq
+    const t = ctx.currentTime + i * 0.14
     g.gain.setValueAtTime(0, t)
-    g.gain.linearRampToValueAtTime(0.2, t + 0.05)
-    g.gain.exponentialRampToValueAtTime(0.001, t + 0.4)
-    o.start(t); o.stop(t + 0.4)
+    g.gain.linearRampToValueAtTime(0.18, t + 0.05)
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.45)
+    o.start(t); o.stop(t + 0.45)
   })
 }
 
-// Deep "whoosh + boom" for high-tier reveals
-function playRareSting(ctx: AudioContext) {
-  const o = ctx.createOscillator()
-  const g = ctx.createGain()
-  o.connect(g); g.connect(ctx.destination)
-  o.type = 'sawtooth'
-  o.frequency.setValueAtTime(80, ctx.currentTime)
-  o.frequency.exponentialRampToValueAtTime(420, ctx.currentTime + 0.5)
-  g.gain.setValueAtTime(0.0001, ctx.currentTime)
-  g.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + 0.08)
-  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.9)
-  o.start(); o.stop(ctx.currentTime + 0.9)
+// Rank 2 (Classified/purple): eerie rising chord + shimmer
+function playRevealClassified(ctx: AudioContext) {
+  const chordFreqs = [415, 523, 622, 830]
+  chordFreqs.forEach((freq, i) => {
+    const o = ctx.createOscillator(); const g = ctx.createGain()
+    o.connect(g); g.connect(ctx.destination)
+    o.type = i % 2 === 0 ? 'sine' : 'triangle'
+    o.frequency.setValueAtTime(freq * 0.85, ctx.currentTime)
+    o.frequency.linearRampToValueAtTime(freq, ctx.currentTime + 0.3)
+    const t = ctx.currentTime + i * 0.07
+    g.gain.setValueAtTime(0, t)
+    g.gain.linearRampToValueAtTime(0.14, t + 0.08)
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.9)
+    o.start(t); o.stop(t + 0.9)
+  })
+  // shimmer layer
+  const shimmer = ctx.createOscillator(); const sg = ctx.createGain()
+  shimmer.connect(sg); sg.connect(ctx.destination)
+  shimmer.type = 'sine'; shimmer.frequency.value = 1244
+  sg.gain.setValueAtTime(0, ctx.currentTime + 0.25)
+  sg.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.35)
+  sg.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2)
+  shimmer.start(ctx.currentTime + 0.25); shimmer.stop(ctx.currentTime + 1.2)
+}
+
+// Rank 3 (Covert/red): big cinematic impact + rising arp
+function playRevealCovert(ctx: AudioContext) {
+  // sub boom
+  const sub = ctx.createOscillator(); const sg = ctx.createGain()
+  sub.connect(sg); sg.connect(ctx.destination)
+  sub.type = 'sine'; sub.frequency.setValueAtTime(55, ctx.currentTime)
+  sub.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.6)
+  sg.gain.setValueAtTime(0.35, ctx.currentTime)
+  sg.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6)
+  sub.start(); sub.stop(ctx.currentTime + 0.6)
+
+  // sawtooth whoosh
+  const w = ctx.createOscillator(); const wg = ctx.createGain()
+  w.connect(wg); wg.connect(ctx.destination)
+  w.type = 'sawtooth'
+  w.frequency.setValueAtTime(60, ctx.currentTime)
+  w.frequency.exponentialRampToValueAtTime(550, ctx.currentTime + 0.55)
+  wg.gain.setValueAtTime(0.0001, ctx.currentTime)
+  wg.gain.exponentialRampToValueAtTime(0.28, ctx.currentTime + 0.06)
+  wg.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8)
+  w.start(); w.stop(ctx.currentTime + 0.8)
+
+  // rising arp
+  const arpFreqs = [494, 622, 740, 988, 1175]
+  arpFreqs.forEach((freq, i) => {
+    const o = ctx.createOscillator(); const g = ctx.createGain()
+    o.connect(g); g.connect(ctx.destination)
+    o.type = 'sine'; o.frequency.value = freq
+    const t = ctx.currentTime + 0.1 + i * 0.09
+    g.gain.setValueAtTime(0, t)
+    g.gain.linearRampToValueAtTime(0.22, t + 0.04)
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.5)
+    o.start(t); o.stop(t + 0.5)
+  })
+}
+
+// Rank 4 (Special/gold): full legendary fanfare
+function playRevealLegendary(ctx: AudioContext) {
+  // massive sub hit
+  const sub = ctx.createOscillator(); const sg = ctx.createGain()
+  sub.connect(sg); sg.connect(ctx.destination)
+  sub.type = 'sine'; sub.frequency.setValueAtTime(40, ctx.currentTime)
+  sub.frequency.exponentialRampToValueAtTime(22, ctx.currentTime + 0.8)
+  sg.gain.setValueAtTime(0.45, ctx.currentTime)
+  sg.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8)
+  sub.start(); sub.stop(ctx.currentTime + 0.8)
+
+  // triumphant chord stab
+  const stab = [523, 659, 784, 1047, 1319]
+  stab.forEach((freq, i) => {
+    const o = ctx.createOscillator(); const g = ctx.createGain()
+    o.connect(g); g.connect(ctx.destination)
+    o.type = i < 2 ? 'triangle' : 'sine'
+    o.frequency.value = freq
+    const t = ctx.currentTime + i * 0.04
+    g.gain.setValueAtTime(0, t)
+    g.gain.linearRampToValueAtTime(0.25 - i * 0.03, t + 0.03)
+    g.gain.exponentialRampToValueAtTime(0.001, t + 1.4)
+    o.start(t); o.stop(t + 1.4)
+  })
+
+  // golden shimmer cascade
+  const cascade = [1568, 1976, 2093, 2637]
+  cascade.forEach((freq, i) => {
+    const o = ctx.createOscillator(); const g = ctx.createGain()
+    o.connect(g); g.connect(ctx.destination)
+    o.type = 'sine'; o.frequency.value = freq
+    const t = ctx.currentTime + 0.35 + i * 0.11
+    g.gain.setValueAtTime(0, t)
+    g.gain.linearRampToValueAtTime(0.1, t + 0.04)
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.7)
+    o.start(t); o.stop(t + 0.7)
+  })
+}
+
+function playReveal(ctx: AudioContext, color: string, rank: number) {
+  if (rank <= 1) playRevealCommon(ctx, color)
+  else if (rank === 2) playRevealClassified(ctx)
+  else if (rank === 3) playRevealCovert(ctx)
+  else playRevealLegendary(ctx)
+}
+
+// Pre-spin tension buildup for known high-rarity outcome
+function playTensionBuild(ctx: AudioContext, rank: number) {
+  const intensity = (rank - 1) / 3 // 0.33 for rank2 → 1.0 for rank4
+  // low drone that swells over 3.5s
+  const drone = ctx.createOscillator(); const dg = ctx.createGain()
+  drone.connect(dg); dg.connect(ctx.destination)
+  drone.type = 'sine'
+  drone.frequency.setValueAtTime(55 + rank * 8, ctx.currentTime)
+  drone.frequency.linearRampToValueAtTime(80 + rank * 15, ctx.currentTime + 3.5)
+  dg.gain.setValueAtTime(0, ctx.currentTime)
+  dg.gain.linearRampToValueAtTime(0.04 + intensity * 0.1, ctx.currentTime + 1.5)
+  dg.gain.linearRampToValueAtTime(0.12 + intensity * 0.15, ctx.currentTime + 3.2)
+  dg.gain.linearRampToValueAtTime(0, ctx.currentTime + 3.8)
+  drone.start(); drone.stop(ctx.currentTime + 3.8)
+
+  // rising pitch sweep at the end
+  const sweep = ctx.createOscillator(); const swg = ctx.createGain()
+  sweep.connect(swg); swg.connect(ctx.destination)
+  sweep.type = 'sawtooth'
+  sweep.frequency.setValueAtTime(120, ctx.currentTime + 3.0)
+  sweep.frequency.exponentialRampToValueAtTime(800 + rank * 200, ctx.currentTime + 3.9)
+  swg.gain.setValueAtTime(0, ctx.currentTime + 3.0)
+  swg.gain.linearRampToValueAtTime(0.06 + intensity * 0.1, ctx.currentTime + 3.3)
+  swg.gain.linearRampToValueAtTime(0, ctx.currentTime + 3.9)
+  sweep.start(ctx.currentTime + 3.0); sweep.stop(ctx.currentTime + 3.9)
 }
 
 const TOTAL_SPINS = 3
@@ -159,7 +271,6 @@ function makeConfetti(count: number, colors: string[]) {
 }
 
 export default function CaseOpenPage() {
-  const router = useRouter()
   const [multiplier, setMultiplier] = useState(1)
   const [contributions, setContributions] = useState<Record<string, GameContribution>>({})
   const [spinsUsed, setSpinsUsed] = useState(0)
@@ -199,12 +310,24 @@ export default function CaseOpenPage() {
     return audioCtxRef.current
   }
 
-  const spin = () => {
-    if (phase === 'spinning' || spinsUsed >= TOTAL_SPINS) return
-    const winner = rollRarity(multiplier)
-    const newStrip = buildStrip(winner, multiplier)
+  const spinWithWinner = (winner: Rarity & { weight: number; chance: number }, isDev = false) => {
+    if (phase === 'spinning') return
 
-    // Step 1: render strip at position 0 with no transition
+    // For dev spins: seed the strip with high-rarity items near the winner for hype
+    let newStrip: (Rarity & { weight: number; chance: number })[]
+    if (isDev) {
+      const highRarities = applyMultiplier(multiplier).filter((r) => r.rank >= 2)
+      newStrip = Array.from({ length: STRIP_SIZE }, (_, i) => {
+        const distFromWinner = Math.abs(i - (STRIP_SIZE - WINNER_POS))
+        // items close to winner are high rarity for tension
+        if (distFromWinner > 0 && distFromWinner <= 8) return highRarities[Math.floor(Math.random() * highRarities.length)]
+        return rollRarity(multiplier)
+      })
+      newStrip[STRIP_SIZE - WINNER_POS] = { ...winner, weight: 0, chance: 0 }
+    } else {
+      newStrip = buildStrip(winner, multiplier)
+    }
+
     setStrip(newStrip)
     setTranslateX(0)
     setAnimating(false)
@@ -213,17 +336,21 @@ export default function CaseOpenPage() {
     const ctx = getAudioCtx()
     void ctx.resume()
 
+    // For high-rarity dev spins, start tension build immediately
+    if (isDev && winner.rank >= 2) playTensionBuild(ctx, winner.rank)
+
+    // Higher rank = higher-pitched ticks for subliminal hype
+    const tickPitch = isDev && winner.rank >= 2 ? 1 + (winner.rank - 1) * 0.3 : 1
     let tickCount = 0
     const maxTicks = 30
     tickIntervalRef.current = setInterval(() => {
-      playTick(ctx)
+      playTick(ctx, tickPitch)
       tickCount++
       if (tickCount >= maxTicks && tickIntervalRef.current) {
         clearInterval(tickIntervalRef.current)
       }
     }, 80 + tickCount * 8)
 
-    // Step 2: after two frames (strip painted at 0), enable transition and set target
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         const containerW = containerRef.current?.clientWidth ?? 320
@@ -233,53 +360,44 @@ export default function CaseOpenPage() {
         setAnimating(true)
         setTranslateX(-(winnerCenter - centerOffset))
 
-        // Tension shake in the last beat of the spin
         setTimeout(() => setShaking(true), 3300)
 
         setTimeout(() => {
           if (tickIntervalRef.current) clearInterval(tickIntervalRef.current)
           const flavour = RARITY_FLAVOUR[winner.rank]
-          playReveal(ctx, winner.color)
-          if (flavour.sting) playRareSting(ctx)
+          playReveal(ctx, winner.color, winner.rank)
           if (flavour.flash) { setFlash(true); setTimeout(() => setFlash(false), 750) }
           setPointerThunk(true); setTimeout(() => setPointerThunk(false), 420)
 
-          const newResults = [...allResults, winner]
-          const newSpinsUsed = spinsUsed + 1
-          setAllResults(newResults)
-          setSpinsUsed(newSpinsUsed)
+          if (!isDev) {
+            const newResults = [...allResults, winner]
+            const newSpinsUsed = spinsUsed + 1
+            setAllResults(newResults)
+            setSpinsUsed(newSpinsUsed)
+            const state = loadCaseState()
+            if (state) {
+              saveCaseState({
+                ...state,
+                spinsUsed: newSpinsUsed,
+                results: newResults.map((r) => r.name),
+              })
+            }
+          }
+
           setPhase('reveal')
           setAnimating(false)
           setShaking(false)
-
-          const state = loadCaseState()
-          if (state) {
-            saveCaseState({
-              ...state,
-              spinsUsed: newSpinsUsed,
-              results: newResults.map((r) => r.name),
-            })
-          }
         }, 4200)
       })
     })
   }
 
-  const nextSpin = () => setPhase('idle')
-
-  const handleResetAll = () => {
-    resetDailyState()
-    resetCaseState()
-    resetGameContributions()
-    setMultiplier(1)
-    setContributions({})
-    setSpinsUsed(0)
-    setAllResults([])
-    setStrip([])
-    setPhase('idle')
-    setTranslateX(0)
-    router.push('/')
+  const spin = () => {
+    if (spinsUsed >= TOTAL_SPINS) return
+    spinWithWinner(rollRarity(multiplier))
   }
+
+  const nextSpin = () => setPhase('idle')
 
   const boostedRarities = applyMultiplier(multiplier)
   const url = typeof window !== 'undefined' ? window.location.origin : ''
@@ -580,12 +698,6 @@ export default function CaseOpenPage() {
           <Link href="/jimsongdle" className="w-full py-3 rounded-2xl font-semibold text-sm text-zinc-500 bg-zinc-900/60 border border-zinc-800 hover:text-white hover:border-zinc-700 transition-all text-center">
             ← Back to Jimsongdle
           </Link>
-          <button
-            onClick={handleResetAll}
-            className="w-full py-2.5 rounded-2xl font-semibold text-sm border border-red-900/60 text-red-500/80 hover:bg-red-950/40 hover:text-red-300 transition-all active:scale-[0.98]"
-          >
-            🔴 Reset everything (dev)
-          </button>
         </div>
       </div>
     </main>

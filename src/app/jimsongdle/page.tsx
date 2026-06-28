@@ -91,7 +91,7 @@ export default function JimsongdlePage() {
             </div>
             <p className="text-zinc-600 text-xs">Next songs in</p>
             <p className="text-white font-black text-3xl tabular-nums tracking-tight">{countdown}</p>
-            <p className="text-zinc-700 text-xs">Resets at midnight AEST</p>
+            <p className="text-zinc-700 text-xs">New songs tomorrow</p>
           </div>
         ) : (
           <div className="w-full flex flex-col items-center gap-3">
