@@ -56,7 +56,7 @@ export default function JimsongdlePage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden">
+    <main className="min-h-screen flex flex-col items-center justify-center px-4 py-10 relative overflow-hidden" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 2.5rem)', paddingTop: 'max(env(safe-area-inset-top), 2.5rem)' }}>
       <div
         className="absolute inset-0 opacity-[0.03]"
         style={{

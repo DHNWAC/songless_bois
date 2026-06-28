@@ -67,7 +67,7 @@ export default function PlayPage() {
   }
 
   return (
-    <main className="min-h-screen pt-8 sm:pt-16 pb-6 sm:pb-12 px-4 relative overflow-hidden">
+    <main className="min-h-screen pt-8 sm:pt-16 pb-6 sm:pb-12 px-4 relative overflow-hidden" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 1.5rem)', paddingTop: 'max(env(safe-area-inset-top), 2rem)' }}>
       {/* Atmospheric backdrop */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="aurora absolute -top-1/4 left-1/2 w-[80vmax] h-[80vmax] -translate-x-1/2 rounded-full blur-[120px] opacity-[0.08]" style={{ background: 'radial-gradient(circle, var(--accent), transparent 60%)' }} />

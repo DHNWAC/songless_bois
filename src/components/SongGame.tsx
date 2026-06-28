@@ -110,10 +110,19 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
     setIsPlaying(true)
     setPlayProgress(0)
     audio.currentTime = 0
-    // Resume AudioContext first (required on iOS — user gesture unlocks it once,
-    // but the context starts suspended so we must resume before playing).
-    const resume = audioCtxRef.current ? audioCtxRef.current.resume() : Promise.resolve()
-    void resume.then(() => audio.play())
+    // iOS only honours audio.play() when it runs *synchronously* inside the tap
+    // handler. Chaining it after ctx.resume().then(...) pushes play() into a
+    // microtask, which iOS treats as non-user-initiated and silently blocks.
+    // So fire play() immediately and resume the AudioContext alongside it
+    // (resume just unlocks the analyser graph; playback itself doesn't need it).
+    void audioCtxRef.current?.resume()
+    const playPromise = audio.play()
+    if (playPromise) {
+      playPromise.catch(() => {
+        // Autoplay rejected (rare after a gesture) — reset so the user can retry.
+        setIsPlaying(false)
+      })
+    }
 
     const analyser = analyserRef.current
     const freq = freqDataRef.current

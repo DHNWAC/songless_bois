@@ -83,7 +83,7 @@ export default function LandingPage() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-12 sm:py-20 relative overflow-hidden">
+    <main className="min-h-screen px-4 py-12 sm:py-20 relative overflow-hidden" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 3rem)', paddingTop: 'max(env(safe-area-inset-top), 3rem)' }}>
       {/* Atmospheric backdrop */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="aurora absolute -top-1/4 left-1/2 w-[90vmax] h-[90vmax] -translate-x-1/2 rounded-full blur-[120px] opacity-[0.10]" style={{ background: 'radial-gradient(circle, #22c55e, transparent 60%)' }} />
@@ -179,9 +179,9 @@ export default function LandingPage() {
 
       </div>
 
-      <button onClick={handleBottomCog} className="fixed bottom-4 right-4 text-zinc-500 hover:text-zinc-300 transition-colors z-20" style={{ fontSize: 18, lineHeight: 1, opacity: 0.6 }} aria-hidden="true" tabIndex={-1}>⚙</button>
+      <button onClick={handleBottomCog} className="fixed right-4 text-zinc-500 hover:text-zinc-300 transition-colors z-20" style={{ fontSize: 18, lineHeight: 1, opacity: 0.6, bottom: 'max(env(safe-area-inset-bottom), 1rem)', right: 'max(env(safe-area-inset-right), 1rem)' }} aria-hidden="true" tabIndex={-1}>⚙</button>
       {topCogVisible && (
-        <button onClick={handleTopCog} className="fixed top-4 right-4 text-zinc-400 hover:text-white transition-colors z-20" style={{ fontSize: 18, lineHeight: 1, opacity: 0.7 }} aria-hidden="true" tabIndex={-1}>⚙</button>
+        <button onClick={handleTopCog} className="fixed text-zinc-400 hover:text-white transition-colors z-20" style={{ fontSize: 18, lineHeight: 1, opacity: 0.7, top: 'max(env(safe-area-inset-top), 1rem)', right: 'max(env(safe-area-inset-right), 1rem)' }} aria-hidden="true" tabIndex={-1}>⚙</button>
       )}
 
       {pinOpen && (

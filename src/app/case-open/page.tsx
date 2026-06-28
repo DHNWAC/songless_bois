@@ -48,7 +48,7 @@ function rollRarity(multiplier: number): Rarity & { weight: number; chance: numb
 
 const STRIP_SIZE = 60
 const WINNER_POS = 6
-const ITEM_W = 96
+const ITEM_W = 80 // matches strip card `w-20` (80px) — must stay in sync for centering
 const ITEM_GAP = 8
 
 function buildStrip(winner: Rarity, multiplier: number) {
@@ -436,7 +436,7 @@ export default function CaseOpenPage() {
   const allDone = spinsUsed >= TOTAL_SPINS
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-3 py-8 relative overflow-hidden">
+    <main className="min-h-screen flex flex-col items-center justify-center px-3 py-8 relative overflow-hidden" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 2rem)', paddingTop: 'max(env(safe-area-inset-top), 2rem)' }}>
       {/* ── Atmospheric reactive background ── */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
