@@ -162,7 +162,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
 
   const selectTrack = (track: SearchResult) => {
     setSelectedTrack(track)
-    setQuery(`${track.name} — ${track.artist}`)
+    setQuery(`${track.name} - ${track.artist}`)
     setShowDropdown(false)
   }
 
@@ -190,7 +190,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
   const submitGuess = () => {
     if (!selectedTrack || status !== 'playing') return
     const correct = isCorrectGuess(selectedTrack, song)
-    const label = `${selectedTrack.name} — ${selectedTrack.artist}`
+    const label = `${selectedTrack.name} - ${selectedTrack.artist}`
     const newGuesses = [...guesses, label]
     setGuesses(newGuesses)
     setQuery(''); setSelectedTrack(null); setSearchResults([])
@@ -304,7 +304,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
             ))}
           </div>
           <p className="relative font-black text-2xl" style={{ color: 'var(--accent)' }}>Got it in {guesses.length}! 🎉</p>
-          <p className="relative text-zinc-300 text-sm mt-1">{song.name} <span className="text-zinc-500">— {song.artist}</span></p>
+          <p className="relative text-zinc-300 text-sm mt-1">{song.name} <span className="text-zinc-500">- {song.artist}</span></p>
         </div>
       )}
       {status === 'lost' && (

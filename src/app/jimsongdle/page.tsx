@@ -112,6 +112,7 @@ export default function JimsongdlePage() {
         </Link>
       </div>
 
+
       {pinOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="w-full max-w-xs bg-zinc-950 border border-zinc-800 rounded-3xl p-6 flex flex-col gap-4 items-center">

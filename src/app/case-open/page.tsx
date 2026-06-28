@@ -273,6 +273,7 @@ function makeConfetti(count: number, colors: string[]) {
 export default function CaseOpenPage() {
   const [multiplier, setMultiplier] = useState(1)
   const [contributions, setContributions] = useState<Record<string, GameContribution>>({})
+  const [disclaimerVisible, setDisclaimerVisible] = useState(false)
   const [spinsUsed, setSpinsUsed] = useState(0)
   const [allResults, setAllResults] = useState<(Rarity & { weight: number })[]>([])
   const [strip, setStrip] = useState<(Rarity & { weight: number; chance: number })[]>([])
@@ -294,6 +295,12 @@ export default function CaseOpenPage() {
     setContributions(contribs)
     setMultiplier(m)
 
+    let timer: ReturnType<typeof setTimeout> | null = null
+    if (Object.keys(contribs).length === 0) {
+      setDisclaimerVisible(true)
+      timer = setTimeout(() => setDisclaimerVisible(false), 5000)
+    }
+
     const state = loadCaseState()
     if (state) {
       setSpinsUsed(state.spinsUsed)
@@ -303,6 +310,8 @@ export default function CaseOpenPage() {
       })
       setAllResults(restored)
     }
+
+    return () => { if (timer) clearTimeout(timer) }
   }, [])
 
   const getAudioCtx = () => {
@@ -406,11 +415,11 @@ export default function CaseOpenPage() {
     'Covert': '🔴', 'Special': '🟡',
   }
   const shareText = [
-    `Case Open — ${multiplier.toFixed(2)}x multiplier`,
+    `Case Open - ${multiplier.toFixed(2)}x multiplier`,
     `Results: ${allResults.map((r) => rarityEmoji[r.name] ?? '⬜').join(' ')}`,
     allResults.map((r) => r.name).join(', '),
     '',
-    url,
+    'https://jimsengdle.vercel.app/',
   ].join('\n')
 
   const handleShare = async () => {
@@ -447,6 +456,16 @@ export default function CaseOpenPage() {
       )}
 
       <div className="w-full max-w-lg flex flex-col gap-6 relative z-10">
+        {/* Disclaimer - only shown if no games played yet, auto-dismisses after 5s */}
+        {disclaimerVisible && (
+          <div className="fade-up rounded-2xl border border-zinc-800/60 bg-zinc-950/60 px-4 py-3 flex items-start gap-3">
+            <span className="text-lg mt-0.5">💡</span>
+            <p className="text-zinc-400 text-xs leading-relaxed">
+              Play all the games first before opening your case. Your odds get better the better you do.
+            </p>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between fade-up">
           <div>
