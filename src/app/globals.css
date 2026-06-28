@@ -54,3 +54,211 @@ body::after {
 .play-idle {
   animation: accentPulse 2s ease-in-out infinite;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   CASE OPEN — visual effects engine
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Slow aurora / nebula drift in backgrounds */
+@keyframes auroraDrift {
+  0%   { transform: translate3d(-8%, -6%, 0) rotate(0deg)   scale(1.2); }
+  50%  { transform: translate3d(8%, 6%, 0)   rotate(180deg) scale(1.45); }
+  100% { transform: translate3d(-8%, -6%, 0) rotate(360deg) scale(1.2); }
+}
+.aurora { animation: auroraDrift 24s linear infinite; will-change: transform; }
+
+/* Conic light sweep behind reveal cards */
+@keyframes conicSpin {
+  to { transform: rotate(360deg); }
+}
+.conic-spin { animation: conicSpin 6s linear infinite; will-change: transform; }
+
+/* Shimmer sweep across surfaces */
+@keyframes shimmerSweep {
+  0%   { transform: translateX(-150%) skewX(-20deg); }
+  100% { transform: translateX(250%)  skewX(-20deg); }
+}
+.shimmer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.13), transparent);
+  transform: translateX(-150%) skewX(-20deg);
+  animation: shimmerSweep 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Case idle float + breathing glow */
+@keyframes caseFloat {
+  0%, 100% { transform: translateY(0) rotateX(8deg) rotateY(-12deg); }
+  50%      { transform: translateY(-10px) rotateX(8deg) rotateY(-8deg); }
+}
+.case-float { animation: caseFloat 4s ease-in-out infinite; will-change: transform; }
+
+/* Case violent shake as it's about to open */
+@keyframes caseShake {
+  0%, 100% { transform: translate(0,0) rotate(0deg); }
+  10% { transform: translate(-3px, 2px) rotate(-2deg); }
+  20% { transform: translate(4px, -3px) rotate(2deg); }
+  30% { transform: translate(-5px, 1px) rotate(-3deg); }
+  40% { transform: translate(5px, 3px) rotate(3deg); }
+  50% { transform: translate(-6px, -2px) rotate(-4deg); }
+  60% { transform: translate(6px, 2px) rotate(4deg); }
+  70% { transform: translate(-5px, -3px) rotate(-3deg); }
+  80% { transform: translate(4px, 3px) rotate(3deg); }
+  90% { transform: translate(-3px, -1px) rotate(-2deg); }
+}
+.case-shake { animation: caseShake 0.5s ease-in-out infinite; will-change: transform; }
+
+/* Lid burst open */
+@keyframes lidBurst {
+  0%   { transform: translateY(0) rotateX(0deg); opacity: 1; }
+  100% { transform: translateY(-120px) rotateX(-110deg); opacity: 0; }
+}
+.lid-burst { animation: lidBurst 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+/* Screen flash on rare reveal */
+@keyframes screenFlash {
+  0%   { opacity: 0; }
+  8%   { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+.screen-flash { animation: screenFlash 0.7s ease-out forwards; }
+
+/* Reveal card pop-in */
+@keyframes revealPop {
+  0%   { transform: scale(0.4) translateY(30px); opacity: 0; }
+  55%  { transform: scale(1.08) translateY(-4px); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+.reveal-pop { animation: revealPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* Rarity halo pulse (intensity set via --halo color inline) */
+@keyframes haloPulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 0.9; transform: scale(1.06); }
+}
+.halo-pulse { animation: haloPulse 2.2s ease-in-out infinite; }
+
+/* Rising particle (translate via --rise distance, drift via --drift) */
+@keyframes particleRise {
+  0%   { transform: translate(0, 0) scale(var(--p-scale, 1)); opacity: 0; }
+  12%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translate(var(--drift, 0), var(--rise, -200px)) scale(0); opacity: 0; }
+}
+.particle { animation: particleRise var(--p-dur, 2.4s) ease-out var(--p-delay, 0s) infinite; }
+
+/* Confetti burst — single shot */
+@keyframes confettiBurst {
+  0%   { transform: translate(0,0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--cx), var(--cy)) rotate(var(--cr)); opacity: 0; }
+}
+.confetti { animation: confettiBurst var(--c-dur, 1.1s) cubic-bezier(0.2, 0.6, 0.4, 1) forwards; }
+
+/* Ticker pointer bounce when strip lands */
+@keyframes pointerThunk {
+  0%   { transform: translateY(-50%) scale(1); }
+  40%  { transform: translateY(-50%) scale(1.5); }
+  100% { transform: translateY(-50%) scale(1); }
+}
+.pointer-thunk { animation: pointerThunk 0.4s ease-out; }
+
+/* Slow text glow for big multipliers */
+@keyframes textGlow {
+  0%, 100% { text-shadow: 0 0 12px currentColor; }
+  50%      { text-shadow: 0 0 28px currentColor, 0 0 4px currentColor; }
+}
+.text-glow { animation: textGlow 2.4s ease-in-out infinite; }
+
+/* Fade-up entrance for stacked UI */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.5s ease-out both; }
+
+/* Big CTA energy pulse */
+@keyframes ctaPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(228,174,57,0.4), 0 8px 30px -8px rgba(228,174,57,0.6); }
+  50%      { box-shadow: 0 0 0 12px rgba(228,174,57,0), 0 12px 40px -8px rgba(228,174,57,0.8); }
+}
+.cta-pulse { animation: ctaPulse 2s ease-in-out infinite; }
+
+/* ════════════════════════════════════════════════════════════════════
+   JIMSONGDLE — song guessing visuals
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Equalizer bars (height driven by --eq, animation just adds life) */
+@keyframes eqBounce {
+  0%, 100% { transform: scaleY(0.4); }
+  50%      { transform: scaleY(1); }
+}
+.eq-bar {
+  transform-origin: bottom;
+  animation: eqBounce var(--eq-dur, 0.6s) ease-in-out infinite;
+  animation-delay: var(--eq-delay, 0s);
+}
+
+/* Concentric sonar rings emanating from play button while playing */
+@keyframes sonar {
+  0%   { transform: scale(0.8); opacity: 0.7; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+.sonar-ring { animation: sonar 1.6s ease-out infinite; }
+
+/* Big win celebration pop */
+@keyframes winPop {
+  0%   { transform: scale(0.7); opacity: 0; }
+  50%  { transform: scale(1.06); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.win-pop { animation: winPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* Loss banner slide + settle */
+@keyframes lossIn {
+  0%   { transform: translateY(10px); opacity: 0; filter: blur(4px); }
+  100% { transform: translateY(0); opacity: 1; filter: blur(0); }
+}
+.loss-in { animation: lossIn 0.45s ease-out both; }
+
+/* Correct row sweep highlight */
+@keyframes correctSweep {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.correct-sweep {
+  background-image: linear-gradient(90deg, var(--accent-dim), var(--accent-glow), var(--accent-dim));
+  background-size: 200% 100%;
+  animation: correctSweep 1.4s ease-in-out infinite;
+}
+
+/* Slow ambient breathing for the whole stage while audio plays */
+@keyframes stagePulse {
+  0%, 100% { opacity: 0.10; transform: scale(1); }
+  50%      { opacity: 0.20; transform: scale(1.08); }
+}
+.stage-pulse { animation: stagePulse 1.2s ease-in-out infinite; }
+
+/* Note glyphs floating up on win */
+@keyframes noteFloat {
+  0%   { transform: translate(0,0) rotate(0deg) scale(0.6); opacity: 0; }
+  15%  { opacity: 1; }
+  100% { transform: translate(var(--n-drift, 0), -160px) rotate(var(--n-rot, 0deg)) scale(1.1); opacity: 0; }
+}
+.note-float { animation: noteFloat var(--n-dur, 2.4s) ease-out var(--n-delay, 0s) infinite; }
+
+/* Countdown digit flip on jimsongdle landing */
+@keyframes digitPulse {
+  0%, 100% { text-shadow: 0 0 0 transparent; }
+  50%      { text-shadow: 0 0 24px var(--accent-glow); }
+}
+.digit-pulse { animation: digitPulse 2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora, .conic-spin, .shimmer::before, .case-float, .case-shake,
+  .halo-pulse, .particle, .text-glow, .cta-pulse,
+  .eq-bar, .sonar-ring, .correct-sweep, .stage-pulse, .note-float, .digit-pulse {
+    animation: none !important;
+  }
+}

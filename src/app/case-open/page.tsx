@@ -19,14 +19,15 @@ interface Rarity {
   color: string
   bg: string
   baseWeight: number
+  rank: number // 0 = common … 4 = best
 }
 
 const BASE_RARITIES: Rarity[] = [
-  { name: 'Mil-Spec',   color: '#4b69ff', bg: '#4b69ff22', baseWeight: 79.92327 },
-  { name: 'Restricted', color: '#8847ff', bg: '#8847ff22', baseWeight: 15.98465 },
-  { name: 'Classified', color: '#d32ce6', bg: '#d32ce622', baseWeight: 3.18939  },
-  { name: 'Covert',     color: '#eb4b4b', bg: '#eb4b4b22', baseWeight: 0.63939  },
-  { name: 'Special',    color: '#e4ae39', bg: '#e4ae3922', baseWeight: 0.26558  },
+  { name: 'Mil-Spec',   color: '#4b69ff', bg: '#4b69ff22', baseWeight: 79.92327, rank: 0 },
+  { name: 'Restricted', color: '#8847ff', bg: '#8847ff22', baseWeight: 15.98465, rank: 1 },
+  { name: 'Classified', color: '#d32ce6', bg: '#d32ce622', baseWeight: 3.18939,  rank: 2 },
+  { name: 'Covert',     color: '#eb4b4b', bg: '#eb4b4b22', baseWeight: 0.63939,  rank: 3 },
+  { name: 'Special',    color: '#e4ae39', bg: '#e4ae3922', baseWeight: 0.26558,  rank: 4 },
 ]
 
 // Apply multiplier: boost rare tiers, rebalance so total = 100
@@ -94,7 +95,68 @@ function playReveal(ctx: AudioContext, color: string) {
   })
 }
 
+// Deep "whoosh + boom" for high-tier reveals
+function playRareSting(ctx: AudioContext) {
+  const o = ctx.createOscillator()
+  const g = ctx.createGain()
+  o.connect(g); g.connect(ctx.destination)
+  o.type = 'sawtooth'
+  o.frequency.setValueAtTime(80, ctx.currentTime)
+  o.frequency.exponentialRampToValueAtTime(420, ctx.currentTime + 0.5)
+  g.gain.setValueAtTime(0.0001, ctx.currentTime)
+  g.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + 0.08)
+  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.9)
+  o.start(); o.stop(ctx.currentTime + 0.9)
+}
+
 const TOTAL_SPINS = 3
+
+// Per-rarity reveal flavour
+const RARITY_FLAVOUR: Record<number, { particles: number; flash: boolean; sting: boolean; tag: string }> = {
+  0: { particles: 6,  flash: false, sting: false, tag: 'Common' },
+  1: { particles: 10, flash: false, sting: false, tag: 'Uncommon' },
+  2: { particles: 18, flash: true,  sting: true,  tag: 'Rare' },
+  3: { particles: 26, flash: true,  sting: true,  tag: 'Very Rare' },
+  4: { particles: 40, flash: true,  sting: true,  tag: 'Legendary' },
+}
+
+// Deterministic-ish particle layout generated once per reveal
+function makeParticles(count: number, color: string) {
+  return Array.from({ length: count }, (_, i) => {
+    const angle = (Math.random() - 0.5) * 1.4 // radians spread
+    const rise = -(120 + Math.random() * 220)
+    const drift = Math.sin(angle) * (60 + Math.random() * 120)
+    const size = 3 + Math.random() * 6
+    return {
+      key: i,
+      left: `${15 + Math.random() * 70}%`,
+      rise: `${rise}px`,
+      drift: `${drift}px`,
+      size,
+      color,
+      delay: `${Math.random() * 1.2}s`,
+      dur: `${1.8 + Math.random() * 1.6}s`,
+      scale: 0.6 + Math.random() * 0.8,
+    }
+  })
+}
+
+function makeConfetti(count: number, colors: string[]) {
+  return Array.from({ length: count }, (_, i) => {
+    const ang = Math.random() * Math.PI * 2
+    const dist = 80 + Math.random() * 180
+    return {
+      key: i,
+      cx: `${Math.cos(ang) * dist}px`,
+      cy: `${Math.sin(ang) * dist - 40}px`,
+      cr: `${(Math.random() - 0.5) * 720}deg`,
+      color: colors[i % colors.length],
+      w: 4 + Math.random() * 5,
+      h: 8 + Math.random() * 8,
+      dur: `${0.9 + Math.random() * 0.8}s`,
+    }
+  })
+}
 
 export default function CaseOpenPage() {
   const router = useRouter()
@@ -106,8 +168,11 @@ export default function CaseOpenPage() {
   const [phase, setPhase] = useState<'idle' | 'spinning' | 'reveal'>('idle')
   const [translateX, setTranslateX] = useState(0)
   const [animating, setAnimating] = useState(false)
+  const [shaking, setShaking] = useState(false)
+  const [flash, setFlash] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showBreakdown, setShowBreakdown] = useState(false)
+  const [pointerThunk, setPointerThunk] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
   const tickIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -146,6 +211,7 @@ export default function CaseOpenPage() {
     setPhase('spinning')
 
     const ctx = getAudioCtx()
+    void ctx.resume()
 
     let tickCount = 0
     const maxTicks = 30
@@ -167,15 +233,24 @@ export default function CaseOpenPage() {
         setAnimating(true)
         setTranslateX(-(winnerCenter - centerOffset))
 
+        // Tension shake in the last beat of the spin
+        setTimeout(() => setShaking(true), 3300)
+
         setTimeout(() => {
           if (tickIntervalRef.current) clearInterval(tickIntervalRef.current)
+          const flavour = RARITY_FLAVOUR[winner.rank]
           playReveal(ctx, winner.color)
+          if (flavour.sting) playRareSting(ctx)
+          if (flavour.flash) { setFlash(true); setTimeout(() => setFlash(false), 750) }
+          setPointerThunk(true); setTimeout(() => setPointerThunk(false), 420)
+
           const newResults = [...allResults, winner]
           const newSpinsUsed = spinsUsed + 1
           setAllResults(newResults)
           setSpinsUsed(newSpinsUsed)
           setPhase('reveal')
           setAnimating(false)
+          setShaking(false)
 
           const state = loadCaseState()
           if (state) {
@@ -229,21 +304,43 @@ export default function CaseOpenPage() {
   }
 
   const currentResult = allResults[allResults.length - 1]
+  const bestRank = allResults.reduce((m, r) => Math.max(m, r.rank), -1)
+  const ambientColor = bestRank >= 0 ? BASE_RARITIES[bestRank].color : '#e4ae39'
+  const allDone = spinsUsed >= TOTAL_SPINS
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+      {/* ── Atmospheric reactive background ── */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div
+          className="aurora absolute top-1/2 left-1/2 w-[120vmax] h-[120vmax] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[100px] opacity-[0.18]"
+          style={{ background: `radial-gradient(circle at 40% 40%, ${ambientColor}, transparent 60%)` }}
+        />
+        <div
+          className="aurora absolute top-1/3 left-1/4 w-[80vmax] h-[80vmax] rounded-full blur-[110px] opacity-[0.12]"
+          style={{ background: `radial-gradient(circle, #4b69ff, transparent 65%)`, animationDelay: '-8s', animationDuration: '32s' }}
+        />
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+      </div>
+
+      {/* Screen flash on rare reveal */}
+      {flash && (
+        <div className="screen-flash fixed inset-0 z-40 pointer-events-none" style={{ background: `radial-gradient(circle at center, ${currentResult?.color}cc, transparent 70%)` }} />
+      )}
 
       <div className="w-full max-w-lg flex flex-col gap-6 relative z-10">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between fade-up">
           <div>
-            <h1 className="text-white font-black text-2xl tracking-tight">Case Open</h1>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">📦</span>
+              <h1 className="text-white font-black text-2xl tracking-tight">Case Open</h1>
+            </div>
             <button
               onClick={() => setShowBreakdown((v) => !v)}
-              className="text-zinc-500 text-xs tabular-nums hover:text-zinc-300 transition-colors text-left"
+              className="text-zinc-500 text-xs tabular-nums hover:text-zinc-300 transition-colors text-left mt-0.5"
             >
-              {multiplier.toFixed(2)}x multiplier · {TOTAL_SPINS - spinsUsed} spins left · <span className="underline underline-offset-2">how?</span>
+              <span className="font-mono font-bold" style={{ color: ambientColor }}>{multiplier.toFixed(2)}x</span> multiplier · {TOTAL_SPINS - spinsUsed} spins left · <span className="underline underline-offset-2">how?</span>
             </button>
           </div>
           <Link href="/" className="text-zinc-600 hover:text-zinc-300 text-sm transition-colors">← All games</Link>
@@ -251,7 +348,7 @@ export default function CaseOpenPage() {
 
         {/* Multiplier breakdown */}
         {showBreakdown && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 flex flex-col gap-3">
+          <div className="reveal-pop rounded-2xl border border-zinc-800 bg-zinc-950/80 backdrop-blur-sm p-4 flex flex-col gap-3 shadow-2xl shadow-black/40">
             <p className="text-zinc-400 text-xs uppercase tracking-wider font-semibold">How your multiplier is calculated</p>
             <p className="text-zinc-600 text-xs leading-relaxed">
               Play games each day to boost your case open odds. Each game contributes a bonus based on how well you perform.
@@ -259,7 +356,6 @@ export default function CaseOpenPage() {
             </p>
 
             <div className="flex flex-col gap-2">
-              {/* Base */}
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-zinc-600" />
@@ -268,7 +364,6 @@ export default function CaseOpenPage() {
                 <span className="text-zinc-500 tabular-nums font-mono text-xs">+1.00x always</span>
               </div>
 
-              {/* Each game contribution */}
               {Object.values(contributions).length === 0 ? (
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-zinc-700 text-xs italic">No games played today yet</span>
@@ -285,10 +380,10 @@ export default function CaseOpenPage() {
                       <span className="text-zinc-300 tabular-nums font-mono text-xs">+{c.boost.toFixed(2)}x</span>
                     </div>
                     <div className="ml-4 flex items-center gap-2">
-                      <div className="flex-1 h-1 rounded-full bg-zinc-800 overflow-hidden">
+                      <div className="flex-1 h-1.5 rounded-full bg-zinc-800 overflow-hidden">
                         <div
-                          className="h-full rounded-full transition-all"
-                          style={{ width: `${c.pct * 100}%`, backgroundColor: '#e4ae39' }}
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{ width: `${c.pct * 100}%`, background: 'linear-gradient(90deg,#e4ae39,#f5d572)' }}
                         />
                       </div>
                       <span className="text-zinc-600 text-xs tabular-nums shrink-0">
@@ -299,7 +394,6 @@ export default function CaseOpenPage() {
                 ))
               )}
 
-              {/* Upcoming games hint */}
               <div className="flex items-center justify-between text-sm opacity-40">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full border border-zinc-700" />
@@ -309,129 +403,261 @@ export default function CaseOpenPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-1 border-t border-zinc-800">
+            <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
               <span className="text-zinc-400 text-xs font-semibold">Total multiplier</span>
-              <span className="text-white font-black tabular-nums">{multiplier.toFixed(2)}x</span>
+              <span className="text-white font-black tabular-nums text-lg">{multiplier.toFixed(2)}x</span>
             </div>
           </div>
         )}
 
         {/* Spin counter dots */}
-        <div className="flex gap-2">
-          {Array.from({ length: TOTAL_SPINS }).map((_, i) => (
-            <div
-              key={i}
-              className="h-1.5 flex-1 rounded-full transition-all"
-              style={{ backgroundColor: i < spinsUsed ? '#e4ae39' : '#27272a' }}
-            />
-          ))}
+        <div className="flex gap-2 fade-up" style={{ animationDelay: '60ms' }}>
+          {Array.from({ length: TOTAL_SPINS }).map((_, i) => {
+            const done = i < spinsUsed
+            const r = allResults[i]
+            return (
+              <div
+                key={i}
+                className="h-1.5 flex-1 rounded-full transition-all duration-500"
+                style={{
+                  background: done && r ? `linear-gradient(90deg,${r.color},${r.color}aa)` : '#27272a',
+                  boxShadow: done && r ? `0 0 10px ${r.color}80` : 'none',
+                }}
+              />
+            )
+          })}
         </div>
 
-        {/* Slider */}
-        <div className="relative">
-          <div ref={containerRef} className="w-full overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950" style={{ height: 120 }}>
-            {strip.length > 0 ? (
+        {/* ── Idle case (before spinning, no strip yet) ── */}
+        {phase === 'idle' && strip.length === 0 && !allDone && (
+          <div className="relative h-44 flex items-center justify-center fade-up" style={{ animationDelay: '120ms' }}>
+            <div
+              className="conic-spin absolute w-56 h-56 rounded-full opacity-30 blur-2xl"
+              style={{ background: `conic-gradient(from 0deg, transparent, ${ambientColor}, transparent 60%)` }}
+            />
+            <div className="case-float relative" style={{ transformStyle: 'preserve-3d', perspective: 600 }}>
               <div
-                className="flex gap-2 items-center h-full py-3 pl-2"
+                className="shimmer relative w-32 h-24 rounded-xl border-2 overflow-hidden flex items-center justify-center"
                 style={{
-                  transform: `translateX(${translateX}px)`,
-                  transition: animating ? 'transform 4s cubic-bezier(0.12, 1, 0.25, 1)' : 'none',
-                  willChange: 'transform',
+                  borderColor: `${ambientColor}99`,
+                  background: `linear-gradient(145deg, #18181b, #0a0a0a)`,
+                  boxShadow: `0 20px 50px -10px rgba(0,0,0,0.8), 0 0 40px -10px ${ambientColor}66, inset 0 1px 0 rgba(255,255,255,0.08)`,
                 }}
               >
-                {strip.map((r, i) => (
-                  <div key={i} className="shrink-0 w-24 h-24 rounded-xl flex flex-col items-center justify-center gap-1 border" style={{ backgroundColor: r.bg, borderColor: r.color + '60' }}>
-                    <div className="w-8 h-8 rounded-full" style={{ backgroundColor: r.color }} />
-                    <p className="text-[10px] font-bold text-center leading-tight px-1" style={{ color: r.color }}>{r.name}</p>
-                  </div>
-                ))}
+                <div className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2" style={{ background: `${ambientColor}55` }} />
+                <div className="w-8 h-8 rounded-md border-2 flex items-center justify-center" style={{ borderColor: `${ambientColor}aa` }}>
+                  <div className="w-2.5 h-2.5 rounded-sm" style={{ background: ambientColor }} />
+                </div>
               </div>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-zinc-700 text-sm">{spinsUsed >= TOTAL_SPINS ? 'All spins used' : 'Press Open to spin'}</p>
-              </div>
-            )}
-          </div>
-          <div className="absolute top-0 bottom-0 left-1/2 -translate-x-px w-0.5 bg-white/20 pointer-events-none" />
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 bg-white/40 -translate-y-1/2 pointer-events-none" />
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 bg-white/40 translate-y-1/2 pointer-events-none" />
-        </div>
-
-        {/* Reveal */}
-        {phase === 'reveal' && currentResult && (
-          <div className="rounded-2xl border p-4 flex items-center gap-4" style={{ borderColor: currentResult.color + '60', backgroundColor: currentResult.bg }}>
-            <div className="w-12 h-12 rounded-full shrink-0" style={{ backgroundColor: currentResult.color }} />
-            <div>
-              <p className="font-black text-xl" style={{ color: currentResult.color }}>{currentResult.name}</p>
-              <p className="text-zinc-500 text-xs">{currentResult.baseWeight.toFixed(5)}% base · boosted to {boostedRarities.find(r => r.name === currentResult.name)?.weight.toFixed(3)}%</p>
             </div>
           </div>
         )}
 
+        {/* ── Slider (during/after spinning) ── */}
+        {(phase !== 'idle' || strip.length > 0) && !allDone && (
+          <div className="relative">
+            <div
+              ref={containerRef}
+              className={`w-full overflow-hidden rounded-2xl border bg-black/60 backdrop-blur-sm ${shaking ? 'case-shake' : ''}`}
+              style={{ height: 124, borderColor: phase === 'reveal' && currentResult ? `${currentResult.color}80` : '#27272a', boxShadow: phase === 'reveal' && currentResult ? `0 0 40px -8px ${currentResult.color}66` : 'none', transition: 'border-color 0.4s, box-shadow 0.4s' }}
+            >
+              {/* edge fades */}
+              <div className="absolute left-0 top-0 bottom-0 w-16 z-20 pointer-events-none" style={{ background: 'linear-gradient(90deg, rgba(0,0,0,0.9), transparent)' }} />
+              <div className="absolute right-0 top-0 bottom-0 w-16 z-20 pointer-events-none" style={{ background: 'linear-gradient(270deg, rgba(0,0,0,0.9), transparent)' }} />
+
+              {strip.length > 0 ? (
+                <div
+                  className="flex gap-2 items-center h-full py-3 pl-2"
+                  style={{
+                    transform: `translateX(${translateX}px)`,
+                    transition: animating ? 'transform 4s cubic-bezier(0.12, 1, 0.25, 1)' : 'none',
+                    willChange: 'transform',
+                  }}
+                >
+                  {strip.map((r, i) => (
+                    <div
+                      key={i}
+                      className="shrink-0 w-24 h-24 rounded-xl flex flex-col items-center justify-center gap-1.5 border relative overflow-hidden"
+                      style={{
+                        background: `linear-gradient(160deg, ${r.color}26, ${r.color}08)`,
+                        borderColor: r.color + '55',
+                        boxShadow: `inset 0 1px 0 ${r.color}33`,
+                      }}
+                    >
+                      <div className="absolute top-0 left-0 right-0 h-1" style={{ background: r.color }} />
+                      <div className="w-9 h-9 rounded-full" style={{ background: `radial-gradient(circle at 35% 30%, ${r.color}, ${r.color}99)`, boxShadow: `0 0 14px ${r.color}88` }} />
+                      <p className="text-[10px] font-bold text-center leading-tight px-1" style={{ color: r.color }}>{r.name}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-zinc-700 text-sm">Press Open to spin</p>
+                </div>
+              )}
+            </div>
+            {/* center ticker */}
+            <div className="absolute top-0 bottom-0 left-1/2 -translate-x-px w-0.5 bg-white/30 pointer-events-none z-30" style={{ boxShadow: '0 0 12px rgba(255,255,255,0.5)' }} />
+            <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 -translate-y-1/2 pointer-events-none z-30 ${pointerThunk ? 'pointer-thunk' : ''}`} style={{ background: ambientColor, boxShadow: `0 0 10px ${ambientColor}` }} />
+            <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 translate-y-1/2 pointer-events-none z-30 ${pointerThunk ? 'pointer-thunk' : ''}`} style={{ background: ambientColor, boxShadow: `0 0 10px ${ambientColor}` }} />
+          </div>
+        )}
+
+        {/* ── Dramatic reveal ── */}
+        {phase === 'reveal' && currentResult && (
+          <RevealCard result={currentResult} boostedWeight={boostedRarities.find(r => r.name === currentResult.name)?.weight ?? 0} />
+        )}
+
         {/* All results so far */}
         {allResults.length > 0 && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 fade-up">
             {allResults.map((r, i) => (
-              <div key={i} className="flex-1 rounded-xl border p-3 flex flex-col items-center gap-1.5" style={{ borderColor: r.color + '50', backgroundColor: r.bg }}>
-                <div className="w-6 h-6 rounded-full" style={{ backgroundColor: r.color }} />
+              <div
+                key={i}
+                className="flex-1 rounded-xl border p-3 flex flex-col items-center gap-1.5 relative overflow-hidden"
+                style={{ borderColor: r.color + '55', background: `linear-gradient(160deg, ${r.color}1f, ${r.color}08)` }}
+              >
+                <div className="w-7 h-7 rounded-full" style={{ background: `radial-gradient(circle at 35% 30%, ${r.color}, ${r.color}99)`, boxShadow: `0 0 12px ${r.color}77` }} />
                 <p className="text-[10px] font-bold text-center" style={{ color: r.color }}>{r.name}</p>
               </div>
             ))}
             {Array.from({ length: TOTAL_SPINS - allResults.length }).map((_, i) => (
-              <div key={i} className="flex-1 rounded-xl border border-zinc-800 p-3 flex items-center justify-center">
-                <p className="text-zinc-700 text-xs">?</p>
+              <div key={i} className="flex-1 rounded-xl border border-dashed border-zinc-800 p-3 flex items-center justify-center min-h-[5.25rem]">
+                <p className="text-zinc-700 text-lg">?</p>
               </div>
             ))}
           </div>
         )}
 
         {/* Odds table */}
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 flex flex-col gap-1.5">
-          <p className="text-zinc-600 text-xs uppercase tracking-wider font-semibold mb-1">Your odds ({multiplier.toFixed(2)}x)</p>
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 backdrop-blur-sm p-4 flex flex-col gap-2.5">
+          <p className="text-zinc-600 text-xs uppercase tracking-wider font-semibold mb-1">Your odds · <span style={{ color: ambientColor }}>{multiplier.toFixed(2)}x</span></p>
           {[...boostedRarities].reverse().map((r) => (
-            <div key={r.name} className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: r.color }} />
-                <span className="font-semibold" style={{ color: r.color }}>{r.name}</span>
+            <div key={r.name} className="flex flex-col gap-1">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: r.color, boxShadow: `0 0 8px ${r.color}99` }} />
+                  <span className="font-semibold" style={{ color: r.color }}>{r.name}</span>
+                </div>
+                <span className="text-zinc-400 tabular-nums text-xs font-mono">{r.weight.toFixed(3)}%</span>
               </div>
-              <span className="text-zinc-500 tabular-nums text-xs">{r.weight.toFixed(3)}%</span>
+              <div className="h-1 rounded-full bg-zinc-900 overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(r.weight, 0.5)}%`, background: `linear-gradient(90deg, ${r.color}, ${r.color}aa)` }} />
+              </div>
             </div>
           ))}
         </div>
 
         {/* Buttons */}
         <div className="flex flex-col gap-2">
-          {spinsUsed < TOTAL_SPINS ? (
+          {!allDone ? (
             <button
               onClick={phase === 'reveal' ? nextSpin : spin}
               disabled={phase === 'spinning'}
-              className="w-full py-4 rounded-2xl font-black text-lg transition-all active:scale-[0.98] disabled:opacity-40"
-              style={{ backgroundColor: '#e4ae39', color: 'rgba(0,0,0,0.8)' }}
+              className={`w-full py-4 rounded-2xl font-black text-lg transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed relative overflow-hidden ${phase === 'idle' ? 'cta-pulse' : ''}`}
+              style={{ background: 'linear-gradient(135deg, #f5d572, #e4ae39)', color: 'rgba(0,0,0,0.85)' }}
             >
-              {phase === 'idle' && `Open Case (${TOTAL_SPINS - spinsUsed} left)`}
-              {phase === 'spinning' && 'Opening…'}
-              {phase === 'reveal' && (spinsUsed < TOTAL_SPINS ? 'Next spin →' : 'Done')}
+              {phase === 'idle' && `Open Case · ${TOTAL_SPINS - spinsUsed} left`}
+              {phase === 'spinning' && (
+                <span className="inline-flex items-center gap-2">
+                  Opening
+                  <span className="inline-flex gap-0.5">
+                    {[0,1,2].map(d => <span key={d} className="w-1 h-1 rounded-full bg-black/70 animate-bounce" style={{ animationDelay: `${d * 120}ms` }} />)}
+                  </span>
+                </span>
+              )}
+              {phase === 'reveal' && (spinsUsed < TOTAL_SPINS ? 'Next spin →' : 'Finish ✦')}
             </button>
           ) : (
             <button
               onClick={handleShare}
-              className="w-full py-4 rounded-2xl font-black text-lg transition-all active:scale-[0.98]"
-              style={{ backgroundColor: '#e4ae39', color: 'rgba(0,0,0,0.8)' }}
+              className="w-full py-4 rounded-2xl font-black text-lg transition-all active:scale-[0.98] relative overflow-hidden shimmer"
+              style={{ background: 'linear-gradient(135deg, #f5d572, #e4ae39)', color: 'rgba(0,0,0,0.85)' }}
             >
-              {copied ? 'Copied!' : 'Share results'}
+              {copied ? 'Copied! ✓' : 'Share results'}
             </button>
           )}
-          <Link href="/jimsongdle" className="w-full py-3 rounded-2xl font-semibold text-sm text-zinc-500 bg-zinc-900 border border-zinc-800 hover:text-white transition-all text-center">
+          <Link href="/jimsongdle" className="w-full py-3 rounded-2xl font-semibold text-sm text-zinc-500 bg-zinc-900/60 border border-zinc-800 hover:text-white hover:border-zinc-700 transition-all text-center">
             ← Back to Jimsongdle
           </Link>
           <button
             onClick={handleResetAll}
-            className="w-full py-2.5 rounded-2xl font-semibold text-sm border border-red-900 text-red-500 hover:bg-red-950 hover:text-red-300 transition-all active:scale-[0.98]"
+            className="w-full py-2.5 rounded-2xl font-semibold text-sm border border-red-900/60 text-red-500/80 hover:bg-red-950/40 hover:text-red-300 transition-all active:scale-[0.98]"
           >
             🔴 Reset everything (dev)
           </button>
         </div>
       </div>
     </main>
+  )
+}
+
+// ── Reveal card with halo, particles, confetti ──
+function RevealCard({ result, boostedWeight }: { result: Rarity & { weight: number }; boostedWeight: number }) {
+  const flavour = RARITY_FLAVOUR[result.rank]
+  const [particles] = useState(() => makeParticles(flavour.particles, result.color))
+  const [confetti] = useState(() => result.rank >= 3 ? makeConfetti(36, [result.color, '#ffffff', '#f5d572']) : [])
+
+  return (
+    <div className="reveal-pop relative rounded-2xl border p-5 overflow-hidden" style={{ borderColor: result.color + '80', background: `linear-gradient(160deg, ${result.color}26, ${result.color}0a)`, boxShadow: `0 0 50px -10px ${result.color}88, inset 0 1px 0 ${result.color}33` }}>
+      {/* conic light sweep */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+        <div className="conic-spin w-[140%] h-[300%] opacity-20" style={{ background: `conic-gradient(from 0deg, transparent, ${result.color}, transparent 25%, transparent, ${result.color}, transparent 75%)` }} />
+      </div>
+
+      {/* rising particles */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {particles.map((p) => (
+          <span
+            key={p.key}
+            className="particle absolute bottom-0 rounded-full"
+            style={{
+              left: p.left,
+              width: p.size, height: p.size,
+              background: p.color,
+              boxShadow: `0 0 6px ${p.color}`,
+              ['--rise' as string]: p.rise,
+              ['--drift' as string]: p.drift,
+              ['--p-delay' as string]: p.delay,
+              ['--p-dur' as string]: p.dur,
+              ['--p-scale' as string]: p.scale,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* confetti burst for top tiers */}
+      {confetti.length > 0 && (
+        <div className="absolute top-1/2 left-1/2 pointer-events-none">
+          {confetti.map((c) => (
+            <span
+              key={c.key}
+              className="confetti absolute rounded-sm"
+              style={{
+                width: c.w, height: c.h, background: c.color,
+                ['--cx' as string]: c.cx,
+                ['--cy' as string]: c.cy,
+                ['--cr' as string]: c.cr,
+                ['--c-dur' as string]: c.dur,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      <div className="relative z-10 flex items-center gap-4">
+        <div className="relative shrink-0">
+          <div className="halo-pulse absolute inset-0 rounded-full blur-md" style={{ background: result.color, transform: 'scale(1.4)' }} />
+          <div className="relative w-14 h-14 rounded-full" style={{ background: `radial-gradient(circle at 35% 30%, #fff8, ${result.color}, ${result.color}cc)`, boxShadow: `0 0 24px ${result.color}` }} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[10px] uppercase tracking-[0.2em] font-bold mb-0.5" style={{ color: `${result.color}cc` }}>{flavour.tag}</p>
+          <p className="font-black text-2xl leading-none text-glow" style={{ color: result.color }}>{result.name}</p>
+          <p className="text-zinc-400 text-xs mt-1.5 font-mono">
+            {result.baseWeight.toFixed(4)}% base → <span className="text-white font-bold">{boostedWeight.toFixed(3)}%</span> boosted
+          </p>
+        </div>
+      </div>
+    </div>
   )
 }

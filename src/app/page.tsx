@@ -54,86 +54,112 @@ const GAMES = [
     tagline: 'Roll your rarity — play all games first for better odds',
     live: true,
     accentColor: '#e4ae39',
+    finale: true,
   },
 ]
 
 export default function LandingPage() {
   return (
     <main className="min-h-screen px-4 py-12 sm:py-20 relative overflow-hidden">
-      {/* Dot grid bg */}
-      <div
-        className="absolute inset-0 opacity-[0.025]"
-        style={{
-          backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)',
-          backgroundSize: '32px 32px',
-        }}
-      />
+      {/* Atmospheric backdrop */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="aurora absolute -top-1/4 left-1/2 w-[90vmax] h-[90vmax] -translate-x-1/2 rounded-full blur-[120px] opacity-[0.10]" style={{ background: 'radial-gradient(circle, #22c55e, transparent 60%)' }} />
+        <div className="aurora absolute top-1/2 -right-1/4 w-[70vmax] h-[70vmax] rounded-full blur-[120px] opacity-[0.08]" style={{ background: 'radial-gradient(circle, #e4ae39, transparent 60%)', animationDelay: '-12s', animationDuration: '30s' }} />
+        <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+      </div>
 
       <div className="max-w-lg mx-auto relative z-10 flex flex-col gap-10">
-        <h1 className="text-5xl sm:text-6xl font-black tracking-tight text-white leading-none">
-          Daily Games
-        </h1>
+        {/* Hero */}
+        <div className="fade-up">
+          <div className="flex items-end gap-0.5 h-6 mb-5 opacity-40">
+            {[3, 7, 11, 6, 13, 5, 9, 4, 10, 6, 12, 4, 8].map((h, i) => (
+              <div key={i} className="w-1 rounded-full bg-white" style={{ height: `${h * 2}px` }} />
+            ))}
+          </div>
+          <p className="text-zinc-600 text-xs uppercase tracking-[0.3em] font-semibold mb-2">A fresh batch every day</p>
+          <h1 className="text-5xl sm:text-6xl font-black tracking-tight text-white leading-[0.95]">
+            Daily
+            <br />
+            <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(120deg, #22c55e, #e4ae39)' }}>Games</span>
+          </h1>
+        </div>
 
         {/* Game grid */}
         <div className="flex flex-col gap-3">
-          {GAMES.map((game) => {
+          {GAMES.map((game, idx) => {
+            const isFinale = 'finale' in game && game.finale
             const inner = (
               <div
                 className={[
-                  'w-full rounded-2xl border p-5 flex items-center gap-4 transition-all',
+                  'group w-full rounded-2xl border p-5 flex items-center gap-4 transition-all duration-300 relative overflow-hidden',
                   game.live
-                    ? 'border-zinc-700 bg-zinc-900/60 hover:border-zinc-500 hover:bg-zinc-900 active:scale-[0.98] cursor-pointer'
-                    : 'border-zinc-800/60 bg-zinc-950/40 cursor-default',
+                    ? 'border-zinc-700/80 bg-zinc-900/50 backdrop-blur-sm hover:border-zinc-500 hover:bg-zinc-900/80 hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer'
+                    : 'border-zinc-800/50 bg-zinc-950/30 cursor-default',
+                  isFinale ? 'shimmer' : '',
                 ].join(' ')}
+                style={game.live ? { boxShadow: `0 0 0 0 ${game.accentColor}00` } : undefined}
               >
-                {/* Emoji icon */}
+                {/* hover glow wash */}
+                {game.live && (
+                  <div
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                    style={{ background: `radial-gradient(120% 100% at 0% 50%, ${game.accentColor}14, transparent 55%)` }}
+                  />
+                )}
+
                 <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 transition-transform duration-300 group-hover:scale-110 relative z-10"
                   style={{
                     backgroundColor: game.live ? `${game.accentColor}18` : 'rgba(39,39,42,0.5)',
                     border: `1px solid ${game.live ? `${game.accentColor}40` : '#27272a'}`,
+                    boxShadow: game.live ? `0 0 20px -6px ${game.accentColor}66` : 'none',
                   }}
                 >
                   {game.emoji}
                 </div>
 
-                {/* Text */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0 relative z-10">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <p className={['font-bold text-base', game.live ? 'text-white' : 'text-zinc-600'].join(' ')}>
                       {game.name}
                     </p>
-                    {game.live && (
-                      <span
-                        className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md"
-                        style={{ backgroundColor: `${game.accentColor}20`, color: game.accentColor }}
-                      >
+                    {isFinale ? (
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md" style={{ backgroundColor: `${game.accentColor}20`, color: game.accentColor }}>
+                        Finale
+                      </span>
+                    ) : game.live ? (
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md flex items-center gap-1" style={{ backgroundColor: `${game.accentColor}20`, color: game.accentColor }}>
+                        <span className="w-1 h-1 rounded-full animate-pulse" style={{ background: game.accentColor }} />
                         Live
                       </span>
-                    )}
+                    ) : null}
                   </div>
-                  <p className={['text-sm', game.live ? 'text-zinc-400' : 'text-zinc-700'].join(' ')}>
+                  <p className={['text-sm mt-0.5', game.live ? 'text-zinc-400' : 'text-zinc-700'].join(' ')}>
                     {game.tagline}
                   </p>
                 </div>
 
-                {/* Arrow */}
                 {game.live && (
-                  <span className="text-zinc-600 text-lg shrink-0">→</span>
+                  <span className="text-zinc-600 text-lg shrink-0 relative z-10 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-zinc-300">→</span>
                 )}
               </div>
             )
 
-            return game.href ? (
-              <Link key={game.id} href={game.href} className="block">
-                {inner}
-              </Link>
-            ) : (
-              <div key={game.id}>{inner}</div>
+            return (
+              <div key={game.id} className="fade-up" style={{ animationDelay: `${idx * 60 + 80}ms` }}>
+                {game.href ? (
+                  <Link href={game.href} className="block">{inner}</Link>
+                ) : (
+                  inner
+                )}
+              </div>
             )
           })}
         </div>
 
+        <p className="text-center text-zinc-700 text-xs fade-up" style={{ animationDelay: '500ms' }}>
+          New songs &amp; resets daily at midnight AEST
+        </p>
       </div>
     </main>
   )

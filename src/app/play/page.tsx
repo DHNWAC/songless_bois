@@ -67,11 +67,29 @@ export default function PlayPage() {
   }
 
   return (
-    <main className="min-h-screen pt-12 sm:pt-20 pb-8 sm:pb-16 px-4">
-      <div className="max-w-lg mx-auto mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-white font-black text-xl tracking-tight">Jimsongdle</h1>
-          <p className="text-zinc-600 text-xs font-semibold tracking-widest uppercase">#{dayNumber}</p>
+    <main className="min-h-screen pt-12 sm:pt-20 pb-8 sm:pb-16 px-4 relative overflow-hidden">
+      {/* Atmospheric backdrop */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="aurora absolute -top-1/4 left-1/2 w-[80vmax] h-[80vmax] -translate-x-1/2 rounded-full blur-[120px] opacity-[0.08]" style={{ background: 'radial-gradient(circle, var(--accent), transparent 60%)' }} />
+        <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+      </div>
+
+      <div className="max-w-lg mx-auto mb-6 flex items-center justify-between relative z-10 fade-up">
+        <div className="flex items-center gap-3">
+          {/* mini animated waveform */}
+          <div className="flex items-end gap-0.5 h-6">
+            {[5, 9, 4, 11, 6].map((h, i) => (
+              <div
+                key={i}
+                className="eq-bar w-0.5 rounded-full"
+                style={{ height: `${h * 2}px`, background: 'var(--accent)', ['--eq-dur' as string]: `${0.5 + i * 0.1}s`, ['--eq-delay' as string]: `${i * 0.08}s`, opacity: 0.7 }}
+              />
+            ))}
+          </div>
+          <div>
+            <h1 className="text-white font-black text-xl tracking-tight">Jimsongdle</h1>
+            <p className="text-zinc-600 text-xs font-semibold tracking-widest uppercase">#{dayNumber}</p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/jimsongdle" className="text-zinc-600 hover:text-zinc-300 text-sm transition-colors">← Back</Link>
@@ -79,10 +97,20 @@ export default function PlayPage() {
         </div>
       </div>
 
+      <div className="relative z-10">
+
       {phase === 'loading' && (
-        <div className="flex flex-col items-center gap-3 pt-20 text-center">
-          <div className="w-6 h-6 border-2 border-zinc-700 border-t-zinc-300 rounded-full animate-spin" />
-          <p className="text-zinc-600 text-sm">Loading songs…</p>
+        <div className="flex flex-col items-center gap-4 pt-20 text-center">
+          <div className="flex items-end gap-1 h-10">
+            {[0,1,2,3,4,5,6].map((i) => (
+              <div
+                key={i}
+                className="eq-bar w-1.5 rounded-full"
+                style={{ height: '70%', background: 'var(--accent)', ['--eq-dur' as string]: `${0.5 + (i % 3) * 0.15}s`, ['--eq-delay' as string]: `${i * 0.07}s` }}
+              />
+            ))}
+          </div>
+          <p className="text-zinc-500 text-sm">Tuning the clips…</p>
         </div>
       )}
 
@@ -117,19 +145,32 @@ export default function PlayPage() {
       )}
 
       {phase === 'daily-limit' && (
-        <div className="flex flex-col items-center gap-4 pt-20 text-center">
-          <p className="text-4xl">🎵</p>
-          <p className="text-white font-bold text-lg">You&apos;re done for today!</p>
-          <p className="text-zinc-500 text-sm">You played all {SONGS_PER_DAY} songs for Jimsongdle #{dayNumber}.</p>
+        <div className="flex flex-col items-center gap-4 pt-20 text-center fade-up">
+          <div className="relative">
+            <div className="halo-pulse absolute inset-0 rounded-full blur-xl" style={{ background: 'var(--accent)', opacity: 0.3 }} />
+            <p className="relative text-5xl">🎵</p>
+          </div>
+          <p className="text-white font-black text-xl">You&apos;re done for today!</p>
+          <p className="text-zinc-500 text-sm max-w-xs">You played all {SONGS_PER_DAY} songs for Jimsongdle #{dayNumber}.</p>
           <p className="text-zinc-600 text-xs">Come back tomorrow at midnight AEST for new songs.</p>
-          <Link
-            href="/"
-            className="mt-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 transition-all"
-          >
-            ← Home
-          </Link>
+          <div className="flex flex-col gap-2 mt-2 w-full max-w-xs">
+            <Link
+              href="/case-open"
+              className="cta-pulse px-5 py-3 rounded-xl text-sm font-black transition-all active:scale-[0.98]"
+              style={{ background: 'linear-gradient(135deg, #f5d572, #e4ae39)', color: 'rgba(0,0,0,0.85)' }}
+            >
+              📦 Open your cases
+            </Link>
+            <Link
+              href="/"
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-zinc-900/60 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 transition-all"
+            >
+              ← Home
+            </Link>
+          </div>
         </div>
       )}
+      </div>
     </main>
   )
 }
