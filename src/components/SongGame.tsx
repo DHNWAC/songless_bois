@@ -200,7 +200,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
   const isIdle = status === 'playing' && !isPlaying
 
   return (
-    <div className="flex flex-col items-center gap-3 sm:gap-4 w-full max-w-lg mx-auto relative">
+    <div className="flex flex-col items-center gap-2 sm:gap-3 w-full max-w-lg mx-auto relative">
       <audio ref={audioRef} src={song.previewUrl} preload="auto" crossOrigin="anonymous" />
 
       {/* Reactive stage glow behind everything */}
@@ -231,7 +231,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
             return (
               <div
                 key={dur}
-                className="w-full h-9 sm:h-11 rounded-xl px-3 flex items-center border bg-zinc-900/20 transition-all"
+                className="w-full h-10 rounded-xl px-3 flex items-center border bg-zinc-900/20 transition-all"
                 style={{
                   borderColor: isNext ? 'rgba(255,255,255,0.12)' : 'rgba(39,39,42,0.55)',
                   boxShadow: isNext ? 'inset 0 0 0 1px rgba(255,255,255,0.04)' : 'none',
@@ -251,7 +251,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
           }
           if (isSkipped) {
             return (
-              <div key={dur} className="w-full h-9 sm:h-11 rounded-xl px-3 flex items-center border border-zinc-800 bg-zinc-900/30 guess-enter">
+              <div key={dur} className="w-full h-10 rounded-xl px-3 flex items-center border border-zinc-800 bg-zinc-900/30 guess-enter">
                 <span className="text-xs tracking-[0.18em] text-zinc-700 font-medium">SKIP</span>
               </div>
             )
@@ -260,7 +260,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
             return (
               <div
                 key={dur}
-                className="correct-sweep w-full h-9 sm:h-11 rounded-xl px-3 flex items-center gap-2 border text-sm font-medium guess-enter"
+                className="correct-sweep w-full h-10 rounded-xl px-3 flex items-center gap-2 border text-sm font-medium guess-enter"
                 style={{ borderColor: 'var(--accent)', boxShadow: '0 0 20px -4px var(--accent-glow)' }}
               >
                 <span style={{ color: 'var(--accent)' }} className="text-sm">✓</span>
@@ -271,7 +271,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
           return (
             <div
               key={dur}
-              className="w-full h-9 sm:h-11 rounded-xl px-3 flex items-center gap-2 text-sm border border-red-900/30 bg-red-950/10 text-zinc-600 line-through guess-enter"
+              className="w-full h-10 rounded-xl px-3 flex items-center gap-2 text-sm border border-red-900/30 bg-red-950/10 text-zinc-600 line-through guess-enter"
             >
               <span className="text-red-900/70 not-italic no-underline">✕</span>
               <span className="truncate">{guess}</span>
@@ -324,7 +324,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
       )}
 
       {/* Live equalizer visualizer */}
-      <div className="w-full flex items-end justify-center gap-[3px] h-16 px-2">
+      <div className="w-full flex items-end justify-center gap-[2px] h-12 px-1">
         {levels.map((lvl, i) => (
           <div
             key={i}
@@ -391,7 +391,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
         <button
           onClick={playClip}
           disabled={isPlaying || status !== 'playing'}
-          className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition-all duration-200 ${
+          className={`relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 ${
             isIdle ? 'play-idle hover:scale-105 active:scale-95' : 'hover:scale-105 active:scale-95 disabled:cursor-not-allowed'
           }`}
           style={{
@@ -458,7 +458,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
           </button>
 
           {showDropdown && searchResults.length > 0 && (
-            <div className="absolute top-12 w-[calc(100%-5.5rem)] bg-zinc-900/95 backdrop-blur-sm border border-zinc-800 rounded-xl overflow-hidden z-10 shadow-2xl shadow-black/60">
+            <div className="absolute top-12 left-0 right-0 bg-zinc-900/95 backdrop-blur-sm border border-zinc-800 rounded-xl overflow-hidden z-10 shadow-2xl shadow-black/60">
               {searchResults.map((track) => (
                 <button
                   key={track.id}

@@ -96,9 +96,9 @@ export default function FinalScore({ results, dayNumber }: FinalScoreProps) {
       {/* Score hero */}
       <div className="text-center">
         <p className="text-zinc-700 text-xs uppercase tracking-[0.2em] mb-2">Today&apos;s score</p>
-        <p className="text-white font-black text-5xl leading-none tabular-nums">
+        <p className="text-white font-black text-4xl leading-none tabular-nums">
           {totalScore}
-          <span className="text-zinc-700 text-3xl font-bold">/{maxScore}</span>
+          <span className="text-zinc-700 text-2xl font-bold">/{maxScore}</span>
         </p>
         <p className="text-zinc-600 text-sm mt-2">{solvedCount} of {SONGS_PER_DAY} songs solved</p>
       </div>
@@ -129,7 +129,7 @@ export default function FinalScore({ results, dayNumber }: FinalScoreProps) {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-base tracking-wider">{buildEmojiGrid(r)}</span>
+              <span className="text-sm tracking-normal">{buildEmojiGrid(r)}</span>
               {r.solved && (
                 <span className="font-bold text-sm tabular-nums" style={{ color: 'var(--accent)' }}>
                   +{scoreFor(r)}

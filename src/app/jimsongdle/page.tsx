@@ -73,7 +73,7 @@ export default function JimsongdlePage() {
             ))}
           </div>
           <h1
-            className="text-6xl font-black tracking-tight text-white mb-3 leading-none cursor-default select-none"
+            className="text-5xl font-black tracking-tight text-white mb-3 leading-none cursor-default select-none"
             onClick={handleTitleTap}
           >
             Jimsongdle

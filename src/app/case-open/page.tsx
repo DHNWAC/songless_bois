@@ -436,7 +436,7 @@ export default function CaseOpenPage() {
   const allDone = spinsUsed >= TOTAL_SPINS
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden">
+    <main className="min-h-screen flex flex-col items-center justify-center px-3 py-8 relative overflow-hidden">
       {/* ── Atmospheric reactive background ── */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
@@ -596,7 +596,7 @@ export default function CaseOpenPage() {
             <div
               ref={containerRef}
               className={`w-full overflow-hidden rounded-2xl border bg-black/60 backdrop-blur-sm ${shaking ? 'case-shake' : ''}`}
-              style={{ height: 124, borderColor: phase === 'reveal' && currentResult ? `${currentResult.color}80` : '#27272a', boxShadow: phase === 'reveal' && currentResult ? `0 0 40px -8px ${currentResult.color}66` : 'none', transition: 'border-color 0.4s, box-shadow 0.4s' }}
+              style={{ height: 108, borderColor: phase === 'reveal' && currentResult ? `${currentResult.color}80` : '#27272a', boxShadow: phase === 'reveal' && currentResult ? `0 0 40px -8px ${currentResult.color}66` : 'none', transition: 'border-color 0.4s, box-shadow 0.4s' }}
             >
               {/* edge fades */}
               <div className="absolute left-0 top-0 bottom-0 w-16 z-20 pointer-events-none" style={{ background: 'linear-gradient(90deg, rgba(0,0,0,0.9), transparent)' }} />
@@ -614,7 +614,7 @@ export default function CaseOpenPage() {
                   {strip.map((r, i) => (
                     <div
                       key={i}
-                      className="shrink-0 w-24 h-24 rounded-xl flex flex-col items-center justify-center gap-1.5 border relative overflow-hidden"
+                      className="shrink-0 w-20 h-20 rounded-xl flex flex-col items-center justify-center gap-1 border relative overflow-hidden"
                       style={{
                         background: `linear-gradient(160deg, ${r.color}26, ${r.color}08)`,
                         borderColor: r.color + '55',

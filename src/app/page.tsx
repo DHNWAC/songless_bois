@@ -99,7 +99,7 @@ export default function LandingPage() {
               <div key={i} className="w-1 rounded-full bg-white" style={{ height: `${h * 2}px` }} />
             ))}
           </div>
-          <h1 className="text-5xl sm:text-6xl font-black tracking-tight text-white leading-[0.95]">
+          <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-[0.95]">
             Jimsengdle
           </h1>
         </div>
