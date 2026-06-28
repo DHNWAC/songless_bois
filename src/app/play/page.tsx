@@ -1,104 +1,135 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { getDailyGenres, getDayNumber } from '@/lib/deezer'
-import Header from '@/components/Header'
-import GenrePicker from '@/components/GenrePicker'
-import AdminDateNav from '@/components/AdminDateNav'
-import AdminResetButton from '@/components/AdminResetButton'
+'use client'
 
-const ADMIN_EMAIL = 'daniel4.cordeiro@gmail.com'
+import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
+import { buildRound, type Song } from '@/lib/songs'
+import {
+  getDayNumber,
+  loadDailyState,
+  saveDailyState,
+  incrementSongsCompleted,
+  SONGS_PER_DAY,
+} from '@/lib/daily'
+import SongGame, { type SongResult } from '@/components/SongGame'
+import FinalScore from '@/components/FinalScore'
 
-export default async function PlayPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ date?: string }>
-}) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/')
+type Phase = 'loading' | 'error' | 'playing' | 'done' | 'daily-limit'
 
-  const isAdmin = user.email === ADMIN_EMAIL
-  const today = new Date().toISOString().slice(0, 10)
-  const params = await searchParams
-  const activeDate = isAdmin && params.date ? params.date : today
-  const dailyGenres = getDailyGenres(activeDate)
-  const dayNumber = getDayNumber(activeDate)
+export default function PlayPage() {
+  const [phase, setPhase] = useState<Phase>('loading')
+  const [songs, setSongs] = useState<Song[]>([])
+  const [current, setCurrent] = useState(0)
+  const [results, setResults] = useState<SongResult[]>([])
+  const [dayNumber, setDayNumber] = useState(1)
 
-  const { data: challenges } = await supabase
-    .from('daily_challenges')
-    .select('id, genre, track_name, artist_name, preview_url, spotify_track_id')
-    .eq('challenge_date', activeDate)
-    .in('genre', dailyGenres)
+  const start = useCallback(async () => {
+    setPhase('loading')
+    setSongs([])
+    setResults([])
+    setCurrent(0)
 
-  const challengeIds = (challenges ?? []).map((c) => c.id)
+    const day = getDayNumber()
+    setDayNumber(day)
 
-  const { data: results } = challengeIds.length
-    ? await supabase
-        .from('game_results')
-        .select('challenge_id, guesses, solved, attempts_used, time_taken_ms')
-        .eq('user_id', user.id)
-        .in('challenge_id', challengeIds)
-    : { data: [] }
+    const dailyState = loadDailyState()
 
-  // Admin previewing a non-today date: don't load real results (they'd be empty anyway)
-  const effectiveResults = isAdmin && activeDate !== today ? [] : (results ?? [])
+    if (dailyState.done) {
+      setPhase('daily-limit')
+      return
+    }
 
-  const resultMap = Object.fromEntries(
-    effectiveResults.map((r) => [r.challenge_id, r])
-  )
+    try {
+      const round = await buildRound(SONGS_PER_DAY, day)
+      if (round.length === 0) { setPhase('error'); return }
+      setSongs(round)
+      setPhase('playing')
+    } catch {
+      setPhase('error')
+    }
+  }, [])
 
-  const seededGenres = dailyGenres.filter((genre) =>
-    (challenges ?? []).some((c) => c.genre === genre)
-  )
+  useEffect(() => { void start() }, [start])
 
-  const genreData = Object.fromEntries(
-    seededGenres.map((genre) => {
-      const challenge = (challenges ?? []).find((c) => c.genre === genre)!
-      const result = resultMap[challenge.id] ?? null
-      return [
-        genre,
-        {
-          challenge: {
-            id: challenge.id,
-            genre: challenge.genre,
-            trackName: challenge.track_name,
-            artistName: challenge.artist_name,
-            previewUrl: challenge.preview_url,
-            spotifyTrackId: challenge.spotify_track_id,
-          },
-          result: result
-            ? {
-                guesses: result.guesses as string[],
-                solved: result.solved as boolean,
-                attemptsUsed: result.attempts_used as number,
-                timeTakenMs: result.time_taken_ms as number | null,
-              }
-            : null,
-        },
-      ]
-    })
-  )
+  const handleResult = (result: SongResult) => {
+    const next = [...results, result]
+    setResults(next)
+
+    const dailyState = loadDailyState()
+    const updated = incrementSongsCompleted(dailyState)
+    saveDailyState(updated)
+
+    if (current + 1 >= SONGS_PER_DAY) {
+      setPhase('done')
+    } else {
+      setCurrent(current + 1)
+      // stay in 'playing' — SongGame remounts via key={current+1}
+    }
+  }
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen pt-16 sm:pt-24 pb-8 sm:pb-16 px-4">
-        <div className="max-w-lg mx-auto">
-          <div className="mb-3 sm:mb-6 flex items-center justify-between">
-            <div>
-              <p className="text-zinc-700 text-xs uppercase tracking-[0.2em] mb-0.5">Day {dayNumber}</p>
-              <h1 className="text-white font-black text-2xl tracking-tight leading-none">Jimsongdle</h1>
-            </div>
-            {isAdmin && (
-              <div className="flex items-center gap-2">
-                <AdminDateNav currentDate={activeDate} today={today} />
-                <AdminResetButton />
-              </div>
-            )}
-          </div>
+    <main className="min-h-screen pt-12 sm:pt-20 pb-8 sm:pb-16 px-4">
+      <div className="max-w-lg mx-auto mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-white font-black text-xl tracking-tight">Jimsongdle</h1>
+          <p className="text-zinc-600 text-xs font-semibold tracking-widest uppercase">#{dayNumber}</p>
         </div>
-        <GenrePicker genreData={genreData} dailyGenres={seededGenres} isAdmin={isAdmin} />
-      </main>
-    </>
+        <div className="flex items-center gap-3">
+          <Link href="/jimsongdle" className="text-zinc-600 hover:text-zinc-300 text-sm transition-colors">← Back</Link>
+          <Link href="/" className="text-zinc-700 hover:text-zinc-400 text-sm transition-colors">All games</Link>
+        </div>
+      </div>
+
+      {phase === 'loading' && (
+        <div className="flex flex-col items-center gap-3 pt-20 text-center">
+          <div className="w-6 h-6 border-2 border-zinc-700 border-t-zinc-300 rounded-full animate-spin" />
+          <p className="text-zinc-600 text-sm">Loading songs…</p>
+        </div>
+      )}
+
+      {phase === 'error' && (
+        <div className="flex flex-col items-center gap-4 pt-20 text-center">
+          <p className="text-zinc-400 text-sm">Couldn&apos;t load songs. Check your connection.</p>
+          <button
+            onClick={() => void start()}
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold"
+            style={{ backgroundColor: 'var(--accent)', color: 'rgba(0,0,0,0.75)' }}
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
+      {phase === 'playing' && songs[current] && (
+        <SongGame
+          key={current}
+          song={songs[current]}
+          index={current}
+          total={SONGS_PER_DAY}
+          onResult={handleResult}
+        />
+      )}
+
+      {phase === 'done' && (
+        <FinalScore
+          results={results}
+          dayNumber={dayNumber}
+        />
+      )}
+
+      {phase === 'daily-limit' && (
+        <div className="flex flex-col items-center gap-4 pt-20 text-center">
+          <p className="text-4xl">🎵</p>
+          <p className="text-white font-bold text-lg">You&apos;re done for today!</p>
+          <p className="text-zinc-500 text-sm">You played all {SONGS_PER_DAY} songs for Jimsongdle #{dayNumber}.</p>
+          <p className="text-zinc-600 text-xs">Come back tomorrow at midnight AEST for new songs.</p>
+          <Link
+            href="/"
+            className="mt-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 transition-all"
+          >
+            ← Home
+          </Link>
+        </div>
+      )}
+    </main>
   )
 }

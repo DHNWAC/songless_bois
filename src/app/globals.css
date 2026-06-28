@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  /* Accent — default green, randomised via ThemeToggle */
+
   --accent: #22c55e;
   --accent-hover: #4ade80;
   --accent-glow: rgba(34, 197, 94, 0.15);

@@ -1,118 +1,69 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { CLIP_DURATIONS } from '@/lib/deezer'
-
-interface Challenge {
-  id: string
-  genre: string
-  trackName: string
-  artistName: string
-  previewUrl: string // stores YouTube video ID
-  spotifyTrackId: string // stores iTunes track ID for matching
-}
-
-interface SearchResult {
-  id: number
-  name: string
-  artist: string
-}
+import { CLIP_DURATIONS, CATEGORY_REVEAL_CLIP, searchTracks, isCorrectGuess, type Song, type SearchResult } from '@/lib/songs'
 
 type GameStatus = 'playing' | 'won' | 'lost'
 
+export interface SongResult {
+  guesses: string[]
+  solved: boolean
+  attemptsUsed: number
+}
+
 interface SongGameProps {
-  challenge: Challenge
-  existingResult: { guesses: string[]; solved: boolean; attemptsUsed: number } | null
-  onComplete?: () => void
+  song: Song
+  index: number
+  total: number
+  onResult: (result: SongResult) => void
 }
 
-function loadYouTubeAPI(): Promise<void> {
-  return new Promise((resolve) => {
-    if (window.YT?.Player) { resolve(); return }
-    const prev = window.onYouTubeIframeAPIReady
-    window.onYouTubeIframeAPIReady = () => { prev?.(); resolve() }
-    if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
-      const tag = document.createElement('script')
-      tag.src = 'https://www.youtube.com/iframe_api'
-      document.head.appendChild(tag)
-    }
-  })
-}
-
-export default function SongGame({ challenge, existingResult, onComplete }: SongGameProps) {
-  const [guesses, setGuesses] = useState<string[]>(existingResult?.guesses ?? [])
-  const [status, setStatus] = useState<GameStatus>(() => {
-    if (existingResult?.solved) return 'won'
-    if (existingResult && !existingResult.solved && existingResult.attemptsUsed >= CLIP_DURATIONS.length) return 'lost'
-    return 'playing'
-  })
-  const [clipIndex, setClipIndex] = useState(existingResult?.attemptsUsed ?? 0)
+export default function SongGame({ song, index, total, onResult }: SongGameProps) {
+  const [guesses, setGuesses] = useState<string[]>([])
+  const [status, setStatus] = useState<GameStatus>('playing')
+  const [clipIndex, setClipIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [playerReady, setPlayerReady] = useState(false)
   const [query, setQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [selectedTrack, setSelectedTrack] = useState<SearchResult | null>(null)
   const [showDropdown, setShowDropdown] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
   const [searchLoading, setSearchLoading] = useState(false)
-  const [elapsedMs, setElapsedMs] = useState(0)
+  const [playProgress, setPlayProgress] = useState(0) // 0-1 within current clip
 
-  const playerRef = useRef<YTPlayer | null>(null)
-  const playerDivRef = useRef<HTMLDivElement>(null)
-  const clipTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const rafRef = useRef<number | null>(null)
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const gameStartRef = useRef<number | null>(null)
-  const displayTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const clipDuration = CLIP_DURATIONS[Math.min(clipIndex, CLIP_DURATIONS.length - 1)]
-
-  useEffect(() => {
-    let destroyed = false
-    loadYouTubeAPI().then(() => {
-      if (destroyed || !playerDivRef.current) return
-      playerRef.current = new window.YT!.Player(playerDivRef.current, {
-        videoId: challenge.previewUrl,
-        width: 1,
-        height: 1,
-        playerVars: { autoplay: 0, controls: 0, disablekb: 1, fs: 0, rel: 0, iv_load_policy: 3, modestbranding: 1 },
-        events: {
-          onReady: () => { if (!destroyed) setPlayerReady(true) },
-        },
-      })
-    })
-    return () => {
-      destroyed = true
-      if (clipTimerRef.current) clearInterval(clipTimerRef.current)
-      if (displayTimerRef.current) clearInterval(displayTimerRef.current)
-      playerRef.current?.destroy()
-      playerRef.current = null
-    }
-  }, [challenge.previewUrl])
+  const clipDurationRef = useRef(clipDuration)
+  clipDurationRef.current = clipDuration
 
   const stopClip = useCallback(() => {
-    if (clipTimerRef.current) { clearInterval(clipTimerRef.current); clipTimerRef.current = null }
-    playerRef.current?.pauseVideo()
-    playerRef.current?.seekTo(0, true)
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null }
+    const audio = audioRef.current
+    if (audio) { audio.pause(); audio.currentTime = 0 }
     setIsPlaying(false)
+    setPlayProgress(0)
   }, [])
 
-  const playClip = useCallback(() => {
-    if (!playerRef.current || !playerReady || isPlaying) return
-    if (!gameStartRef.current) {
-      gameStartRef.current = Date.now()
-      displayTimerRef.current = setInterval(() => {
-        setElapsedMs(Date.now() - gameStartRef.current!)
-      }, 1000)
-    }
-    setIsPlaying(true)
-    playerRef.current.seekTo(0, true)
-    playerRef.current.playVideo()
+  useEffect(() => () => stopClip(), [stopClip])
 
-    clipTimerRef.current = setInterval(() => {
-      const current = playerRef.current?.getCurrentTime() ?? 0
-      if (current >= clipDuration) stopClip()
-    }, 50)
-  }, [playerReady, isPlaying, clipDuration, stopClip])
+  const playClip = useCallback(() => {
+    const audio = audioRef.current
+    if (!audio || isPlaying || status !== 'playing') return
+    setIsPlaying(true)
+    setPlayProgress(0)
+    audio.currentTime = 0
+    void audio.play()
+
+    const tick = () => {
+      const elapsed = audio.currentTime
+      setPlayProgress(Math.min(elapsed / clipDurationRef.current, 1))
+      if (elapsed >= clipDurationRef.current) { stopClip(); return }
+      rafRef.current = requestAnimationFrame(tick)
+    }
+    rafRef.current = requestAnimationFrame(tick)
+  }, [isPlaying, status, stopClip])
 
   const handleSearch = useCallback((value: string) => {
     setQuery(value)
@@ -123,9 +74,8 @@ export default function SongGame({ challenge, existingResult, onComplete }: Song
     searchTimeout.current = setTimeout(async () => {
       setSearchLoading(true)
       try {
-        const res = await fetch(`/api/spotify/search?q=${encodeURIComponent(value)}`)
-        const data = await res.json() as { tracks?: SearchResult[] }
-        setSearchResults(data.tracks ?? [])
+        const tracks = await searchTracks(value)
+        setSearchResults(tracks)
         setShowDropdown(true)
       } catch { setSearchResults([]) }
       finally { setSearchLoading(false) }
@@ -138,22 +88,19 @@ export default function SongGame({ challenge, existingResult, onComplete }: Song
     setShowDropdown(false)
   }
 
+  const finish = useCallback((newGuesses: string[], won: boolean) => {
+    stopClip()
+    setStatus(won ? 'won' : 'lost')
+    setTimeout(() => onResult({ guesses: newGuesses, solved: won, attemptsUsed: newGuesses.length }), 1600)
+  }, [onResult, stopClip])
+
   const advance = useCallback((newGuesses: string[], won: boolean) => {
-    const nextIndex = newGuesses.length
-    if (won) {
-      if (displayTimerRef.current) { clearInterval(displayTimerRef.current); displayTimerRef.current = null }
-      setStatus('won')
-      saveResult(newGuesses, true, newGuesses.length)
-      setTimeout(() => onComplete?.(), 2000)
-    } else if (nextIndex >= CLIP_DURATIONS.length) {
-      if (displayTimerRef.current) { clearInterval(displayTimerRef.current); displayTimerRef.current = null }
-      setStatus('lost')
-      saveResult(newGuesses, false, newGuesses.length)
-      setTimeout(() => onComplete?.(), 2000)
+    if (won || newGuesses.length >= CLIP_DURATIONS.length) {
+      finish(newGuesses, won)
     } else {
-      setClipIndex(nextIndex)
+      setClipIndex(newGuesses.length)
     }
-  }, [onComplete])
+  }, [finish])
 
   const skip = () => {
     if (status !== 'playing') return
@@ -162,33 +109,25 @@ export default function SongGame({ challenge, existingResult, onComplete }: Song
     advance(newGuesses, false)
   }
 
-  const submitGuess = async () => {
-    if (!selectedTrack || status !== 'playing' || submitting) return
-    setSubmitting(true)
-    const isCorrect = String(selectedTrack.id) === challenge.spotifyTrackId
+  const submitGuess = () => {
+    if (!selectedTrack || status !== 'playing') return
+    const correct = isCorrectGuess(selectedTrack, song)
     const label = `${selectedTrack.name} — ${selectedTrack.artist}`
     const newGuesses = [...guesses, label]
     setGuesses(newGuesses)
     setQuery(''); setSelectedTrack(null); setSearchResults([])
-    advance(newGuesses, isCorrect)
-    setSubmitting(false)
+    advance(newGuesses, correct)
   }
 
-  const saveResult = async (g: string[], solved: boolean, attempts: number) => {
-    const timeTakenMs = gameStartRef.current ? Date.now() - gameStartRef.current : undefined
-    await fetch('/api/game/result', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ challengeId: challenge.id, guesses: g, solved, attemptsUsed: attempts, timeTakenMs }),
-    })
-  }
-
-  const isIdle = status === 'playing' && playerReady && !isPlaying
+  const isIdle = status === 'playing' && !isPlaying
 
   return (
     <div className="flex flex-col items-center gap-2 sm:gap-4 w-full max-w-lg mx-auto">
-      {/* Hidden YouTube player — must be off-screen at real size for YT to initialize */}
-      <div ref={playerDivRef} style={{ position: 'fixed', left: '-9999px', top: '-9999px', width: '320px', height: '180px' }} aria-hidden />
+      <audio ref={audioRef} src={song.previewUrl} preload="auto" />
+
+      <p className="text-zinc-700 text-xs uppercase tracking-[0.2em] self-start">
+        Song {index + 1} <span className="text-zinc-800">/ {total}</span>
+      </p>
 
       {/* Guess rows */}
       <div className="w-full flex flex-col gap-1.5">
@@ -243,50 +182,62 @@ export default function SongGame({ challenge, existingResult, onComplete }: Song
           style={{ backgroundColor: 'var(--accent-dim)', borderColor: 'var(--accent)' }}
         >
           <p className="font-bold text-lg" style={{ color: 'var(--accent)' }}>Got it in {guesses.length}!</p>
-          <p className="text-zinc-400 text-sm mt-0.5">{challenge.trackName} — {challenge.artistName}</p>
+          <p className="text-zinc-400 text-sm mt-0.5">{song.name} — {song.artist}</p>
         </div>
       )}
       {status === 'lost' && (
         <div className="w-full text-center py-3 px-4 rounded-xl border border-zinc-800 bg-zinc-900/50">
           <p className="text-zinc-600 text-xs uppercase tracking-widest mb-1">The answer was</p>
-          <p className="text-white font-bold text-lg leading-tight">{challenge.trackName}</p>
-          <p className="text-zinc-500 text-sm">{challenge.artistName}</p>
+          <p className="text-white font-bold text-lg leading-tight">{song.name}</p>
+          <p className="text-zinc-500 text-sm">{song.artist}</p>
         </div>
       )}
 
-      {/* Progress + timer row */}
+      {/* Category reveal */}
+      {clipIndex >= CATEGORY_REVEAL_CLIP && status === 'playing' && (
+        <div className="w-full flex items-center gap-2 px-3 py-2 rounded-xl border border-zinc-800 bg-zinc-900/40">
+          <span className="text-zinc-600 text-xs uppercase tracking-widest">Category</span>
+          <span className="text-white text-xs font-semibold">{song.category}</span>
+        </div>
+      )}
+
+      {/* Progress row */}
       <div className="w-full">
         <div className="flex items-center justify-between mb-2">
           <span className="text-zinc-600 text-xs font-mono">
             {clipDuration < 1 ? `${clipDuration * 1000}ms` : `${clipDuration}s`}
           </span>
-          {gameStartRef.current !== null && status === 'playing' && (
-            <span className="text-zinc-700 text-xs font-mono tabular-nums">
-              {String(Math.floor(elapsedMs / 60000)).padStart(2, '0')}:{String(Math.floor((elapsedMs % 60000) / 1000)).padStart(2, '0')}
-            </span>
-          )}
         </div>
         <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden flex gap-0.5">
-          {CLIP_DURATIONS.map((dur, i) => (
-            <div
-              key={dur}
-              style={{
-                flex: dur,
-                backgroundColor:
-                  i < clipIndex ? '#3f3f46'
-                  : i === clipIndex ? 'var(--accent)'
-                  : 'transparent',
-              }}
-              className="h-full rounded-full transition-colors"
-            />
-          ))}
+          {CLIP_DURATIONS.map((dur, i) => {
+            const isActive = i === clipIndex
+            const isPast = i < clipIndex
+            return (
+              <div key={dur} style={{ flex: dur, position: 'relative', overflow: 'hidden' }} className="h-full rounded-full">
+                <div
+                  className="absolute inset-0 transition-colors duration-200"
+                  style={{ backgroundColor: isPast ? '#3f3f46' : isActive ? 'rgba(255,255,255,0.12)' : 'transparent' }}
+                />
+                {isActive && (
+                  <div
+                    className="absolute inset-y-0 left-0 rounded-full"
+                    style={{
+                      width: isPlaying ? `${playProgress * 100}%` : '0%',
+                      backgroundColor: 'var(--accent)',
+                      transition: isPlaying ? 'none' : 'width 0.15s ease-out',
+                    }}
+                  />
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 
       {/* Play button */}
       <button
         onClick={playClip}
-        disabled={isPlaying || !playerReady || status !== 'playing'}
+        disabled={isPlaying || status !== 'playing'}
         className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center transition-all duration-200 ${
           isIdle ? 'play-idle hover:scale-105 active:scale-95' : 'hover:scale-105 active:scale-95 disabled:cursor-not-allowed'
         }`}
@@ -295,9 +246,7 @@ export default function SongGame({ challenge, existingResult, onComplete }: Song
           boxShadow: isIdle ? '0 0 28px var(--accent-glow)' : 'none',
         }}
       >
-        {!playerReady ? (
-          <div className="w-4 h-4 border-2 border-zinc-600 border-t-zinc-300 rounded-full animate-spin" />
-        ) : isPlaying ? (
+        {isPlaying ? (
           <span className="flex gap-0.5 items-end h-5">
             {[4, 7, 5, 8, 4].map((h, i) => (
               <span
@@ -341,16 +290,11 @@ export default function SongGame({ challenge, existingResult, onComplete }: Song
 
           <button
             onClick={submitGuess}
-            disabled={!selectedTrack || submitting}
+            disabled={!selectedTrack}
             className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all"
-            style={selectedTrack ? {
-              backgroundColor: 'var(--accent)',
-              color: 'rgba(0,0,0,0.75)',
-            } : {
-              backgroundColor: '#18181b',
-              color: '#52525b',
-              cursor: 'not-allowed',
-            }}
+            style={selectedTrack
+              ? { backgroundColor: 'var(--accent)', color: 'rgba(0,0,0,0.75)' }
+              : { backgroundColor: '#18181b', color: '#52525b', cursor: 'not-allowed' }}
           >
             Submit
           </button>

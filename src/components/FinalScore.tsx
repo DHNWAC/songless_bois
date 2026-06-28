@@ -1,75 +1,94 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CLIP_DURATIONS } from '@/lib/deezer'
-import CountdownTimer from './CountdownTimer'
-
-interface GenreResult {
-  genre: string
-  solved: boolean
-  attemptsUsed: number
-  guesses: string[]
-  timeTakenMs: number | null
-}
+import { CLIP_DURATIONS } from '@/lib/songs'
+import {
+  SONGS_PER_DAY,
+  scoreToMultiplier,
+  saveCaseState,
+  loadCaseState,
+  saveGameContribution,
+  JIMSONGDLE_MAX_BOOST,
+} from '@/lib/daily'
+import type { SongResult } from './SongGame'
 
 interface FinalScoreProps {
-  results: GenreResult[]
-  isAdmin?: boolean
+  results: SongResult[]
+  dayNumber: number
 }
 
-const EMOJIS = {
-  solved: ['🟩', '🟩', '🟩', '🟩', '🟩', '🟩'],
-  skip: '⬛',
-  wrong: '🟥',
+function buildEmojiGrid(r: SongResult): string {
+  return r.guesses
+    .map((g, i) => {
+      if (r.solved && i === r.guesses.length - 1) return '🟩'
+      if (g === '') return '⬛'
+      return '🟥'
+    })
+    .join('')
 }
 
-function buildEmojiGrid(guesses: string[], solved: boolean): string {
-  return guesses.map((g, i) => {
-    if (solved && i === guesses.length - 1) return '🟩'
-    if (g === '') return EMOJIS.skip
-    return EMOJIS.wrong
-  }).join('')
+function scoreFor(r: SongResult): number {
+  return r.solved ? CLIP_DURATIONS.length - r.attemptsUsed + 1 : 0
 }
 
-function scoreForResult(r: GenreResult): number {
-  if (!r.solved) return 0
-  return CLIP_DURATIONS.length - r.attemptsUsed + 1
+function getAESTDateString(): string {
+  const now = new Date()
+  const aestMs = now.getTime() + now.getTimezoneOffset() * 60_000 + 10 * 60 * 60_000
+  const d = new Date(aestMs)
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 }
 
-function formatTime(ms: number | null): string {
-  if (!ms) return '--'
-  const s = Math.floor(ms / 1000)
-  const m = Math.floor(s / 60)
-  return m > 0 ? `${m}m ${s % 60}s` : `${s}s`
-}
-
-export default function FinalScore({ results, isAdmin }: FinalScoreProps) {
+export default function FinalScore({ results, dayNumber }: FinalScoreProps) {
+  const [copied, setCopied] = useState(false)
   const router = useRouter()
-  const totalScore = results.reduce((acc, r) => acc + scoreForResult(r), 0)
-  const maxScore = CLIP_DURATIONS.length * results.length
-  const totalTimeMs = results.reduce((acc, r) => acc + (r.timeTakenMs ?? 0), 0)
-  const timeStr = formatTime(totalTimeMs || null)
+
+  const totalScore = results.reduce((acc, r) => acc + scoreFor(r), 0)
+  const maxScore = CLIP_DURATIONS.length * SONGS_PER_DAY
+  const solvedCount = results.filter((r) => r.solved).length
+  const multiplier = scoreToMultiplier(totalScore, maxScore)
+
+  // Save case state + contribution once on mount
+  useEffect(() => {
+    const pct = maxScore > 0 ? totalScore / maxScore : 0
+    saveGameContribution({
+      gameId: 'jimsongdle',
+      label: 'Jimsongdle',
+      score: totalScore,
+      maxScore,
+      pct,
+      maxBoost: JIMSONGDLE_MAX_BOOST,
+      boost: pct * JIMSONGDLE_MAX_BOOST,
+    })
+    const existing = loadCaseState()
+    if (!existing) {
+      saveCaseState({
+        date: getAESTDateString(),
+        multiplier,
+        spinsUsed: 0,
+        results: [],
+      })
+    }
+  }, [multiplier, totalScore, maxScore])
+
+  const url = typeof window !== 'undefined' ? window.location.origin : ''
 
   const shareText = [
-    `Jimsengdle ${new Date().toLocaleDateString('en-AU')}`,
-    `Score: ${totalScore}/${maxScore} · Time: ${timeStr}`,
+    `Jimsongdle #${dayNumber} ${totalScore}/${maxScore} (${solvedCount}/${SONGS_PER_DAY} 🎵)`,
     '',
-    ...results.map((r) => `${r.genre}: ${buildEmojiGrid(r.guesses, r.solved)}`),
+    ...results.map((r) => buildEmojiGrid(r)),
+    '',
+    url,
   ].join('\n')
 
-  const handleShare = () => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(shareText)
-        .then(() => alert('Copied to clipboard!'))
-        .catch(() => alert(shareText))
-    } else {
-      alert(shareText)
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(shareText)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      prompt('Copy your results:', shareText)
     }
-  }
-
-  const handleAdminReset = async () => {
-    await fetch('/api/admin/reset-today', { method: 'POST' })
-    window.location.href = '/play'
   }
 
   return (
@@ -81,39 +100,39 @@ export default function FinalScore({ results, isAdmin }: FinalScoreProps) {
           {totalScore}
           <span className="text-zinc-700 text-3xl font-bold">/{maxScore}</span>
         </p>
-        {totalTimeMs > 0 && (
-          <p className="text-zinc-600 text-sm mt-2 font-mono">{timeStr}</p>
-        )}
+        <p className="text-zinc-600 text-sm mt-2">{solvedCount} of {SONGS_PER_DAY} songs solved</p>
       </div>
 
-      {/* Genre result cards */}
+      {/* Case multiplier preview */}
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-3 flex items-center justify-between w-full">
+        <div>
+          <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Case open bonus</p>
+          <p className="text-white font-black text-lg tabular-nums">{multiplier.toFixed(2)}x multiplier</p>
+        </div>
+        <div className="text-3xl">📦</div>
+      </div>
+
+      {/* Per-song cards */}
       <div className="w-full flex flex-col gap-2">
-        {results.map((r) => (
+        {results.map((r, i) => (
           <div
-            key={r.genre}
+            key={i}
             className="w-full rounded-2xl border p-4 flex items-center justify-between"
-            style={r.solved ? {
-              borderColor: 'var(--accent)',
-              backgroundColor: 'var(--accent-dim)',
-            } : {
-              borderColor: '#262626',
-              backgroundColor: 'rgba(24,24,27,0.5)',
-            }}
+            style={r.solved
+              ? { borderColor: 'var(--accent)', backgroundColor: 'var(--accent-dim)' }
+              : { borderColor: '#262626', backgroundColor: 'rgba(24,24,27,0.5)' }}
           >
             <div>
-              <p className="text-white font-semibold text-sm">{r.genre}</p>
-              <p
-                className="text-xs mt-0.5"
-                style={r.solved ? { color: 'var(--accent)' } : { color: '#525252' }}
-              >
+              <p className="text-white font-semibold text-sm">Song {i + 1}</p>
+              <p className="text-xs mt-0.5" style={r.solved ? { color: 'var(--accent)' } : { color: '#525252' }}>
                 {r.solved ? `Got it in ${r.attemptsUsed}` : 'Not solved'}
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-base tracking-wider">{buildEmojiGrid(r.guesses, r.solved)}</span>
+              <span className="text-base tracking-wider">{buildEmojiGrid(r)}</span>
               {r.solved && (
                 <span className="font-bold text-sm tabular-nums" style={{ color: 'var(--accent)' }}>
-                  +{scoreForResult(r)}
+                  +{scoreFor(r)}
                 </span>
               )}
             </div>
@@ -121,25 +140,26 @@ export default function FinalScore({ results, isAdmin }: FinalScoreProps) {
         ))}
       </div>
 
-      {/* Share */}
-      <button
-        onClick={handleShare}
-        className="w-full py-3 rounded-2xl font-semibold text-sm transition-all hover:opacity-90 active:scale-[0.98]"
-        style={{ backgroundColor: 'var(--accent)', color: 'rgba(0,0,0,0.75)' }}
-      >
-        Share results
-      </button>
-
-      <CountdownTimer />
-
-      {isAdmin && (
+      {/* Actions */}
+      <div className="w-full flex flex-col gap-2">
         <button
-          onClick={handleAdminReset}
-          className="text-xs text-zinc-700 hover:text-red-500 transition-colors border border-zinc-800 hover:border-red-900 rounded-lg px-3 py-1.5"
+          onClick={() => router.push('/case-open')}
+          className="w-full py-3 rounded-2xl font-black text-sm transition-all hover:opacity-90 active:scale-[0.98]"
+          style={{ backgroundColor: '#e4ae39', color: 'rgba(0,0,0,0.8)' }}
         >
-          🔄 Admin: reset today&apos;s results
+          📦 Open Cases ({multiplier.toFixed(2)}x odds)
         </button>
-      )}
+        <button
+          onClick={handleShare}
+          className="w-full py-3 rounded-2xl font-semibold text-sm transition-all hover:opacity-90 active:scale-[0.98]"
+          style={{ backgroundColor: 'var(--accent)', color: 'rgba(0,0,0,0.75)' }}
+        >
+          {copied ? 'Copied!' : 'Share results'}
+        </button>
+        <div className="w-full py-3 rounded-2xl font-semibold text-sm text-zinc-600 bg-zinc-900 border border-zinc-800 text-center">
+          Come back tomorrow ✓
+        </div>
+      </div>
     </div>
   )
 }

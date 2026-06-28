@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import ThemeToggleLoader from "@/components/ThemeToggleLoader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Jimsengdle",
-  description: "Daily song battles with the boys",
+  title: "Jimsongdle",
+  description: "Guess the song from a clip",
 };
 
 export default function RootLayout({
@@ -30,7 +29,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         {children}
-        <ThemeToggleLoader />
+
       </body>
     </html>
   );
