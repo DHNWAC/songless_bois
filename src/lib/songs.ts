@@ -533,3 +533,12 @@ export function isCorrectGuess(guess: SearchResult, answer: Song): boolean {
   if (guess.id === answer.id) return true
   return normalize(guess.name) === normalize(answer.name)
 }
+
+export type GuessOutcome = 'correct' | 'artist' | 'wrong'
+
+// 'correct' = right song, 'artist' = wrong song but right artist, else 'wrong'.
+export function evaluateGuess(guess: SearchResult, answer: Song): GuessOutcome {
+  if (isCorrectGuess(guess, answer)) return 'correct'
+  if (normalize(guess.artist) === normalize(answer.artist)) return 'artist'
+  return 'wrong'
+}

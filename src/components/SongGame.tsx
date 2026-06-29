@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { CLIP_DURATIONS, CATEGORY_REVEAL_CLIP, searchTracks, isCorrectGuess, type Song, type SearchResult } from '@/lib/songs'
+import { CLIP_DURATIONS, CATEGORY_REVEAL_CLIP, searchTracks, evaluateGuess, type GuessOutcome, type Song, type SearchResult } from '@/lib/songs'
 
 type GameStatus = 'playing' | 'won' | 'lost'
 
@@ -22,6 +22,8 @@ const EQ_BARS = 28
 
 export default function SongGame({ song, index, total, onResult }: SongGameProps) {
   const [guesses, setGuesses] = useState<string[]>([])
+  // Parallel to `guesses`: outcome of each non-skip guess (skips have no entry).
+  const [outcomes, setOutcomes] = useState<GuessOutcome[]>([])
   const [status, setStatus] = useState<GameStatus>('playing')
   const [clipIndex, setClipIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -196,12 +198,15 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
     if (status !== 'playing') return
     const newGuesses = [...guesses, '']
     setGuesses(newGuesses)
+    setOutcomes([...outcomes, 'wrong'])
     advance(newGuesses, false)
   }
 
   const submitGuess = () => {
     if (!selectedTrack || status !== 'playing') return
-    const correct = isCorrectGuess(selectedTrack, song)
+    const outcome = evaluateGuess(selectedTrack, song)
+    const correct = outcome === 'correct'
+    setOutcomes([...outcomes, outcome])
     const label = `${selectedTrack.name} - ${selectedTrack.artist}`
     const newGuesses = [...guesses, label]
     setGuesses(newGuesses)
@@ -277,6 +282,19 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
               >
                 <span style={{ color: 'var(--accent)' }} className="text-sm">✓</span>
                 <span className="text-white truncate">{guess}</span>
+              </div>
+            )
+          }
+          if (outcomes[i] === 'artist') {
+            return (
+              <div
+                key={dur}
+                className="w-full h-8 rounded-lg px-3 flex items-center gap-2 text-sm border guess-enter"
+                style={{ borderColor: '#e4ae3955', backgroundColor: '#e4ae3914', color: '#e4ae39' }}
+              >
+                <span className="not-italic" style={{ color: '#e4ae39' }}>♪</span>
+                <span className="truncate text-zinc-300">{guess}</span>
+                <span className="ml-auto text-[10px] uppercase tracking-wider shrink-0" style={{ color: '#e4ae39' }}>artist</span>
               </div>
             )
           }

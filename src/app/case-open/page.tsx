@@ -222,6 +222,9 @@ function playTensionBuild(ctx: AudioContext, rank: number) {
 }
 
 const TOTAL_SPINS = 3
+// Daily spin cooldown is disabled for now (unlimited opens). Flip back to true
+// to restore the 3-spins-per-day limit + persisted daily state.
+const COOLDOWN_ENABLED = false
 
 // Per-rarity reveal flavour
 const RARITY_FLAVOUR: Record<number, { particles: number; flash: boolean; sting: boolean; tag: string }> = {
@@ -301,14 +304,16 @@ export default function CaseOpenPage() {
       timer = setTimeout(() => setDisclaimerVisible(false), 5000)
     }
 
-    const state = loadCaseState()
-    if (state) {
-      setSpinsUsed(state.spinsUsed)
-      const restored = state.results.map((name) => {
-        const r = BASE_RARITIES.find((b) => b.name === name) ?? BASE_RARITIES[0]
-        return { ...r, weight: 0 }
-      })
-      setAllResults(restored)
+    if (COOLDOWN_ENABLED) {
+      const state = loadCaseState()
+      if (state) {
+        setSpinsUsed(state.spinsUsed)
+        const restored = state.results.map((name) => {
+          const r = BASE_RARITIES.find((b) => b.name === name) ?? BASE_RARITIES[0]
+          return { ...r, weight: 0 }
+        })
+        setAllResults(restored)
+      }
     }
 
     return () => { if (timer) clearTimeout(timer) }
@@ -383,13 +388,15 @@ export default function CaseOpenPage() {
             const newSpinsUsed = spinsUsed + 1
             setAllResults(newResults)
             setSpinsUsed(newSpinsUsed)
-            const state = loadCaseState()
-            if (state) {
-              saveCaseState({
-                ...state,
-                spinsUsed: newSpinsUsed,
-                results: newResults.map((r) => r.name),
-              })
+            if (COOLDOWN_ENABLED) {
+              const state = loadCaseState()
+              if (state) {
+                saveCaseState({
+                  ...state,
+                  spinsUsed: newSpinsUsed,
+                  results: newResults.map((r) => r.name),
+                })
+              }
             }
           }
 
@@ -402,7 +409,7 @@ export default function CaseOpenPage() {
   }
 
   const spin = () => {
-    if (spinsUsed >= TOTAL_SPINS) return
+    if (COOLDOWN_ENABLED && spinsUsed >= TOTAL_SPINS) return
     spinWithWinner(rollRarity(multiplier))
   }
 
@@ -433,7 +440,7 @@ export default function CaseOpenPage() {
   const currentResult = allResults[allResults.length - 1]
   const bestRank = allResults.reduce((m, r) => Math.max(m, r.rank), -1)
   const ambientColor = bestRank >= 0 ? BASE_RARITIES[bestRank].color : '#e4ae39'
-  const allDone = spinsUsed >= TOTAL_SPINS
+  const allDone = COOLDOWN_ENABLED && spinsUsed >= TOTAL_SPINS
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-3 py-8 relative overflow-hidden" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 2rem)', paddingTop: 'max(env(safe-area-inset-top), 2rem)' }}>
@@ -477,7 +484,7 @@ export default function CaseOpenPage() {
               onClick={() => setShowBreakdown((v) => !v)}
               className="text-zinc-500 text-xs tabular-nums hover:text-zinc-300 transition-colors text-left mt-0.5"
             >
-              <span className="font-mono font-bold" style={{ color: ambientColor }}>{multiplier.toFixed(2)}x</span> multiplier · {TOTAL_SPINS - spinsUsed} spins left · <span className="underline underline-offset-2">how?</span>
+              <span className="font-mono font-bold" style={{ color: ambientColor }}>{multiplier.toFixed(2)}x</span> multiplier{COOLDOWN_ENABLED ? ` · ${TOTAL_SPINS - spinsUsed} spins left` : ''} · <span className="underline underline-offset-2">how?</span>
             </button>
           </div>
           <Link href="/" className="text-zinc-600 hover:text-zinc-300 text-sm transition-colors">← All games</Link>
@@ -548,6 +555,7 @@ export default function CaseOpenPage() {
         )}
 
         {/* Spin counter dots */}
+        {COOLDOWN_ENABLED && (
         <div className="flex gap-2 fade-up" style={{ animationDelay: '60ms' }}>
           {Array.from({ length: TOTAL_SPINS }).map((_, i) => {
             const done = i < spinsUsed
@@ -564,6 +572,7 @@ export default function CaseOpenPage() {
             )
           })}
         </div>
+        )}
 
         {/* ── Idle case (before spinning, no strip yet) ── */}
         {phase === 'idle' && strip.length === 0 && !allDone && (
@@ -645,20 +654,21 @@ export default function CaseOpenPage() {
           <RevealCard result={currentResult} boostedWeight={boostedRarities.find(r => r.name === currentResult.name)?.weight ?? 0} />
         )}
 
-        {/* All results so far */}
+        {/* All results so far. With cooldown off the count is unbounded, so show
+            the most recent spins and let them wrap instead of squishing flex-1. */}
         {allResults.length > 0 && (
-          <div className="flex gap-2 fade-up">
-            {allResults.map((r, i) => (
+          <div className="flex gap-2 fade-up flex-wrap">
+            {(COOLDOWN_ENABLED ? allResults : allResults.slice(-8)).map((r, i) => (
               <div
                 key={i}
-                className="flex-1 rounded-xl border p-3 flex flex-col items-center gap-1.5 relative overflow-hidden"
-                style={{ borderColor: r.color + '55', background: `linear-gradient(160deg, ${r.color}1f, ${r.color}08)` }}
+                className="rounded-xl border p-3 flex flex-col items-center gap-1.5 relative overflow-hidden"
+                style={{ flex: COOLDOWN_ENABLED ? '1' : '0 0 calc(25% - 0.375rem)', borderColor: r.color + '55', background: `linear-gradient(160deg, ${r.color}1f, ${r.color}08)` }}
               >
                 <div className="w-7 h-7 rounded-full" style={{ background: `radial-gradient(circle at 35% 30%, ${r.color}, ${r.color}99)`, boxShadow: `0 0 12px ${r.color}77` }} />
                 <p className="text-[10px] font-bold text-center" style={{ color: r.color }}>{r.name}</p>
               </div>
             ))}
-            {Array.from({ length: TOTAL_SPINS - allResults.length }).map((_, i) => (
+            {COOLDOWN_ENABLED && Array.from({ length: TOTAL_SPINS - allResults.length }).map((_, i) => (
               <div key={i} className="flex-1 rounded-xl border border-dashed border-zinc-800 p-3 flex items-center justify-center min-h-[5.25rem]">
                 <p className="text-zinc-700 text-lg">?</p>
               </div>
@@ -694,7 +704,7 @@ export default function CaseOpenPage() {
               className={`w-full py-4 rounded-2xl font-black text-lg transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed relative overflow-hidden ${phase === 'idle' ? 'cta-pulse' : ''}`}
               style={{ background: 'linear-gradient(135deg, #f5d572, #e4ae39)', color: 'rgba(0,0,0,0.85)' }}
             >
-              {phase === 'idle' && `Open Case · ${TOTAL_SPINS - spinsUsed} left`}
+              {phase === 'idle' && (COOLDOWN_ENABLED ? `Open Case · ${TOTAL_SPINS - spinsUsed} left` : 'Open Case')}
               {phase === 'spinning' && (
                 <span className="inline-flex items-center gap-2">
                   Opening
@@ -703,13 +713,23 @@ export default function CaseOpenPage() {
                   </span>
                 </span>
               )}
-              {phase === 'reveal' && (spinsUsed < TOTAL_SPINS ? 'Next spin →' : 'Finish ✦')}
+              {phase === 'reveal' && (!COOLDOWN_ENABLED ? 'Open again →' : spinsUsed < TOTAL_SPINS ? 'Next spin →' : 'Finish ✦')}
             </button>
           ) : (
             <button
               onClick={handleShare}
               className="w-full py-4 rounded-2xl font-black text-lg transition-all active:scale-[0.98] relative overflow-hidden shimmer"
               style={{ background: 'linear-gradient(135deg, #f5d572, #e4ae39)', color: 'rgba(0,0,0,0.85)' }}
+            >
+              {copied ? 'Copied! ✓' : 'Share results'}
+            </button>
+          )}
+          {/* With cooldown off there's no "finished" state, so expose Share
+              alongside the open button once at least one case is opened. */}
+          {!COOLDOWN_ENABLED && phase === 'reveal' && allResults.length > 0 && (
+            <button
+              onClick={handleShare}
+              className="w-full py-3 rounded-2xl font-semibold text-sm text-zinc-300 bg-zinc-900/60 border border-zinc-800 hover:text-white hover:border-zinc-700 transition-all"
             >
               {copied ? 'Copied! ✓' : 'Share results'}
             </button>
