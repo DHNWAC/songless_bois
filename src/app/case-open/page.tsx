@@ -222,9 +222,8 @@ function playTensionBuild(ctx: AudioContext, rank: number) {
 }
 
 const TOTAL_SPINS = 3
-// Daily spin cooldown is disabled for now (unlimited opens). Flip back to true
-// to restore the 3-spins-per-day limit + persisted daily state.
-const COOLDOWN_ENABLED = false
+// Daily spin cooldown: 3 spins per day + persisted daily state.
+const COOLDOWN_ENABLED = true
 
 // Per-rarity reveal flavour
 const RARITY_FLAVOUR: Record<number, { particles: number; flash: boolean; sting: boolean; tag: string }> = {
