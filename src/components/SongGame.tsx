@@ -392,6 +392,7 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
       </div>
 
       {/* Play button with sonar rings */}
+      <div className="flex flex-col items-center gap-1.5">
       <div className="relative flex items-center justify-center">
         {isPlaying && (
           <>
@@ -431,6 +432,12 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
             </svg>
           )}
         </button>
+      </div>
+        {isIdle && (
+          <p className="text-zinc-600 text-[11px] text-center leading-tight max-w-[15rem]">
+            If sound doesn&apos;t start, click play a few times to confirm
+          </p>
+        )}
       </div>
 
       {/* Search + Skip + Submit */}
