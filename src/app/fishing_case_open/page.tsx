@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 
 interface Driver {
@@ -266,7 +265,6 @@ export default function FishingCaseOpenPage() {
             </div>
             <p className="text-zinc-500 text-xs mt-0.5">Spin to decide who drives · 1-in-3 each</p>
           </div>
-          <Link href="/" className="text-zinc-600 hover:text-zinc-300 text-sm transition-colors">← All games</Link>
         </div>
 
         {/* Contestants */}
