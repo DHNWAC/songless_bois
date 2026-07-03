@@ -62,6 +62,8 @@ const GAMES = [
   },
 ]
 
+const LOCKED_GAME_IDS = new Set(['contain', 'heist'])
+
 export default function LandingPage() {
   const [topCogVisible, setTopCogVisible] = useState(false)
   const [pinOpen, setPinOpen] = useState(false)
@@ -69,6 +71,27 @@ export default function LandingPage() {
   const [pin, setPin] = useState('')
   const [pinError, setPinError] = useState(false)
   const cogTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const [lockClicks, setLockClicks] = useState(0)
+  const lockClickTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [codeOpen, setCodeOpen] = useState(false)
+  const [gamesUnlocked, setGamesUnlocked] = useState(false)
+  const [code, setCode] = useState('')
+  const [codeError, setCodeError] = useState(false)
+
+  const handleLockClick = () => {
+    if (lockClickTimer.current) clearTimeout(lockClickTimer.current)
+    const next = lockClicks + 1
+    if (next >= 3) {
+      setLockClicks(0)
+      setCode('')
+      setCodeError(false)
+      setCodeOpen(true)
+    } else {
+      setLockClicks(next)
+      lockClickTimer.current = setTimeout(() => setLockClicks(0), 1500)
+    }
+  }
 
   const handleBottomCog = () => {
     setTopCogVisible(true)
@@ -99,8 +122,16 @@ export default function LandingPage() {
               <div key={i} className="w-1 rounded-full bg-white" style={{ height: `${h * 2}px` }} />
             ))}
           </div>
-          <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-[0.95]">
+          <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-[0.95] flex items-center gap-2">
             Jimsengdle
+            <button
+              onClick={handleLockClick}
+              className="text-lg sm:text-2xl opacity-30 hover:opacity-60 transition-opacity align-middle"
+              aria-hidden="true"
+              tabIndex={-1}
+            >
+              🔒
+            </button>
           </h1>
         </div>
 
@@ -108,6 +139,7 @@ export default function LandingPage() {
         <div className="flex flex-col gap-3">
           {GAMES.map((game, idx) => {
             const isFinale = 'finale' in game && game.finale
+            const needsCode = LOCKED_GAME_IDS.has(game.id) && !gamesUnlocked
             const inner = (
               <div
                 className={[
@@ -153,6 +185,7 @@ export default function LandingPage() {
                         Live
                       </span>
                     ) : null}
+                    {needsCode && <span className="text-xs" aria-hidden="true">🔒</span>}
                   </div>
                   <p className={['text-sm mt-0.5', game.live ? 'text-zinc-400' : 'text-zinc-700'].join(' ')}>
                     {game.tagline}
@@ -167,7 +200,14 @@ export default function LandingPage() {
 
             return (
               <div key={game.id} className="fade-up" style={{ animationDelay: `${idx * 60 + 80}ms` }}>
-                {game.href ? (
+                {game.href && needsCode ? (
+                  <button
+                    onClick={() => { setCode(''); setCodeError(false); setCodeOpen(true) }}
+                    className="block w-full text-left"
+                  >
+                    {inner}
+                  </button>
+                ) : game.href ? (
                   <Link href={game.href} className="block">{inner}</Link>
                 ) : (
                   inner
@@ -214,6 +254,53 @@ export default function LandingPage() {
               ))}
             </div>
             <button onClick={() => setPinOpen(false)} className="text-zinc-600 hover:text-zinc-400 text-sm transition-colors">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {codeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-xs bg-zinc-950 border border-zinc-800 rounded-3xl p-6 flex flex-col gap-4 items-center">
+            <p className="text-zinc-500 text-xs uppercase tracking-widest font-semibold">Locked games</p>
+            <p className="text-white font-black text-lg">Enter code</p>
+            <div className="flex gap-3">
+              {[0, 1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="w-10 h-12 rounded-xl border flex items-center justify-center text-xl font-black"
+                  style={{
+                    borderColor: codeError ? '#7f1d1d' : code.length > i ? 'var(--accent)' : '#3f3f46',
+                    backgroundColor: codeError ? 'rgba(127,29,29,0.2)' : code.length > i ? 'var(--accent-dim)' : 'transparent',
+                    color: codeError ? '#f87171' : 'white',
+                  }}
+                >
+                  {code.length > i ? '●' : ''}
+                </div>
+              ))}
+            </div>
+            {codeError && <p className="text-red-400 text-xs">Wrong code</p>}
+            <div className="grid grid-cols-3 gap-2 w-full">
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'].map((k) => (
+                <button
+                  key={k}
+                  disabled={k === ''}
+                  onClick={() => {
+                    if (k === '⌫') { setCode((c) => c.slice(0, -1)); setCodeError(false); return }
+                    if (k === '') return
+                    const next = code + k
+                    setCode(next)
+                    if (next.length === 4) {
+                      if (next === '2121') { setCodeOpen(false); setGamesUnlocked(true) }
+                      else { setCodeError(true); setTimeout(() => { setCode(''); setCodeError(false) }, 800) }
+                    }
+                  }}
+                  className="py-3.5 rounded-2xl text-white font-bold text-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 active:scale-95 transition-all disabled:opacity-0"
+                >
+                  {k}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setCodeOpen(false)} className="text-zinc-600 hover:text-zinc-400 text-sm transition-colors">Cancel</button>
           </div>
         </div>
       )}
