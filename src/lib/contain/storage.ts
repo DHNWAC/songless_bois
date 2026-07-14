@@ -4,6 +4,8 @@
 // Replays are allowed: firstScore is written once per puzzle and never
 // touched again; bestScore improves monotonically; attempts always counts.
 
+import { getSigned, setSigned } from '../integrity'
+
 const STORAGE_KEY = 'contain_progress'
 
 export interface PuzzleRecord {
@@ -26,19 +28,12 @@ function defaultProgress(): ContainProgress {
 }
 
 export function loadProgress(): ContainProgress {
-  if (typeof window === 'undefined') return defaultProgress()
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return defaultProgress()
-    return { ...defaultProgress(), ...(JSON.parse(raw) as ContainProgress) }
-  } catch {
-    return defaultProgress()
-  }
+  const stored = getSigned<ContainProgress>(STORAGE_KEY)
+  return stored ? { ...defaultProgress(), ...stored } : defaultProgress()
 }
 
 function saveProgress(progress: ContainProgress): void {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress))
+  setSigned(STORAGE_KEY, progress)
 }
 
 export function getRecord(puzzleId: number): PuzzleRecord | null {

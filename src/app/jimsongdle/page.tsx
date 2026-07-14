@@ -4,6 +4,10 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { getDayNumber, loadDailyState, msUntilAESTMidnight, SONGS_PER_DAY } from '@/lib/daily'
 import AdminPanel from '@/components/AdminPanel'
+import { sha256Hex } from '@/lib/integrity'
+
+// SHA-256 digest of the admin PIN — the PIN itself never appears in the bundle.
+const ADMIN_PIN_HASH = 'd07164a628596323ebcf8796dee0e5c164620e0922b52483bc805f54416ee73c'
 
 function formatCountdown(ms: number): string {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000))
@@ -145,8 +149,10 @@ export default function JimsongdlePage() {
                     const next = pin + k
                     setPin(next)
                     if (next.length === 4) {
-                      if (next === '6767') { setPinOpen(false); setAdminOpen(true) }
-                      else { setPinError(true); setTimeout(() => { setPin(''); setPinError(false) }, 800) }
+                      void sha256Hex(next).then((h) => {
+                        if (h === ADMIN_PIN_HASH) { setPinOpen(false); setAdminOpen(true) }
+                        else { setPinError(true); setTimeout(() => { setPin(''); setPinError(false) }, 800) }
+                      })
                     }
                   }}
                   className="py-3.5 rounded-2xl text-white font-bold text-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 active:scale-95 transition-all disabled:opacity-0"

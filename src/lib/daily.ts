@@ -1,6 +1,8 @@
 // Daily game state persisted in localStorage.
 // Day 1 epoch: 2026-06-29. Resets at midnight AEST (UTC+10).
 
+import { getSigned, setSigned } from './integrity'
+
 export const SONGS_PER_DAY = 3
 
 const EPOCH_DATE = '2026-06-29'
@@ -29,14 +31,9 @@ const CONTRIBUTIONS_KEY = 'jimsongdle_contributions'
 
 export function loadGameContributions(): Record<string, GameContribution> {
   if (typeof window === 'undefined') return {}
-  const today = getAESTDateString()
-  try {
-    const raw = localStorage.getItem(CONTRIBUTIONS_KEY)
-    if (!raw) return {}
-    const parsed = JSON.parse(raw) as { date: string; games: Record<string, GameContribution> }
-    if (parsed.date !== today) return {}
-    return parsed.games
-  } catch { return {} }
+  const parsed = getSigned<{ date: string; games: Record<string, GameContribution> }>(CONTRIBUTIONS_KEY)
+  if (!parsed || parsed.date !== getAESTDateString()) return {}
+  return parsed.games
 }
 
 export function saveGameContribution(contribution: GameContribution): void {
@@ -44,7 +41,7 @@ export function saveGameContribution(contribution: GameContribution): void {
   const today = getAESTDateString()
   const current = loadGameContributions()
   current[contribution.gameId] = contribution
-  localStorage.setItem(CONTRIBUTIONS_KEY, JSON.stringify({ date: today, games: current }))
+  setSigned(CONTRIBUTIONS_KEY, { date: today, games: current })
 }
 
 export function resetGameContributions(): void {
@@ -95,23 +92,15 @@ function defaultState(date: string): DailyState {
 }
 
 export function loadDailyState(): DailyState {
-  if (typeof window === 'undefined') return defaultState(getAESTDateString())
   const today = getAESTDateString()
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return defaultState(today)
-    const parsed = JSON.parse(raw) as DailyState
-    // Reset if it's a new day
-    if (parsed.date !== today) return defaultState(today)
-    return parsed
-  } catch {
-    return defaultState(today)
-  }
+  const parsed = getSigned<DailyState>(STORAGE_KEY)
+  // Reset if missing, tampered, or it's a new day
+  if (!parsed || parsed.date !== today) return defaultState(today)
+  return parsed
 }
 
 export function saveDailyState(state: DailyState): void {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  setSigned(STORAGE_KEY, state)
 }
 
 export function resetDailyState(): void {
@@ -137,27 +126,13 @@ export interface CaseState {
 }
 
 export function saveCaseState(state: CaseState): void {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(CASE_KEY, JSON.stringify(state))
+  setSigned(CASE_KEY, state)
 }
 
 export function loadCaseState(): CaseState | null {
-  if (typeof window === 'undefined') return null
-  const today = (() => {
-    const now = new Date()
-    const aestOffset = 10 * 60
-    const utcMs = now.getTime() + now.getTimezoneOffset() * 60_000
-    const aestMs = utcMs + aestOffset * 60_000
-    const d = new Date(aestMs)
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-  })()
-  try {
-    const raw = localStorage.getItem(CASE_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as CaseState
-    if (parsed.date !== today) return null
-    return parsed
-  } catch { return null }
+  const parsed = getSigned<CaseState>(CASE_KEY)
+  if (!parsed || parsed.date !== getAESTDateString()) return null
+  return parsed
 }
 
 export function resetCaseState(): void {

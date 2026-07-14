@@ -2,6 +2,7 @@
 // Scores are step counts (lower is better); bestScore improves monotonically.
 
 export { getAESTDateString } from '../contain/storage'
+import { getSigned, setSigned } from '../integrity'
 
 const STORAGE_KEY = 'omerdle_progress'
 
@@ -25,19 +26,12 @@ function defaultProgress(): OmerdleProgress {
 }
 
 export function loadProgress(): OmerdleProgress {
-  if (typeof window === 'undefined') return defaultProgress()
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return defaultProgress()
-    return { ...defaultProgress(), ...(JSON.parse(raw) as OmerdleProgress) }
-  } catch {
-    return defaultProgress()
-  }
+  const stored = getSigned<OmerdleProgress>(STORAGE_KEY)
+  return stored ? { ...defaultProgress(), ...stored } : defaultProgress()
 }
 
 function saveProgress(progress: OmerdleProgress): void {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress))
+  setSigned(STORAGE_KEY, progress)
 }
 
 /** Count a started attempt (called on the first step of a fresh attempt). */

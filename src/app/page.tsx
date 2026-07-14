@@ -3,6 +3,11 @@
 import Link from 'next/link'
 import { useRef, useState } from 'react'
 import AdminPanel from '@/components/AdminPanel'
+import { sha256Hex } from '@/lib/integrity'
+
+// SHA-256 digests — the codes themselves never appear in the bundle.
+const ADMIN_PIN_HASH = 'd07164a628596323ebcf8796dee0e5c164620e0922b52483bc805f54416ee73c'
+const UNLOCK_CODE_HASH = 'b8dc2c143be8994682b08461f46487e05874e59dd9ab65cf973e3a3c67a763aa'
 
 const GAMES = [
   {
@@ -245,8 +250,10 @@ export default function LandingPage() {
                   const next = pin + k
                   setPin(next)
                   if (next.length === 4) {
-                    if (next === '6767') { setPinOpen(false); setAdminOpen(true) }
-                    else { setPinError(true); setTimeout(() => { setPin(''); setPinError(false) }, 800) }
+                    void sha256Hex(next).then((h) => {
+                      if (h === ADMIN_PIN_HASH) { setPinOpen(false); setAdminOpen(true) }
+                      else { setPinError(true); setTimeout(() => { setPin(''); setPinError(false) }, 800) }
+                    })
                   }
                 }} className="py-3.5 rounded-2xl text-white font-bold text-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 active:scale-95 transition-all disabled:opacity-0">
                   {k}
@@ -290,8 +297,10 @@ export default function LandingPage() {
                     const next = code + k
                     setCode(next)
                     if (next.length === 4) {
-                      if (next === '2121') { setCodeOpen(false); setGamesUnlocked(true) }
-                      else { setCodeError(true); setTimeout(() => { setCode(''); setCodeError(false) }, 800) }
+                      void sha256Hex(next).then((h) => {
+                        if (h === UNLOCK_CODE_HASH) { setCodeOpen(false); setGamesUnlocked(true) }
+                        else { setCodeError(true); setTimeout(() => { setCode(''); setCodeError(false) }, 800) }
+                      })
                     }
                   }}
                   className="py-3.5 rounded-2xl text-white font-bold text-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 active:scale-95 transition-all disabled:opacity-0"
