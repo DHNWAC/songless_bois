@@ -33,13 +33,13 @@ const GAMES = [
     accentColor: '#a78bfa',
   },
   {
-    id: 'placeholder-5',
-    href: null,
-    emoji: '🎲',
-    name: '???',
-    tagline: 'Coming soon',
-    live: false,
-    accentColor: '#3f3f46',
+    id: 'omerdle',
+    href: '/omerdle',
+    emoji: '🪜',
+    name: 'Omerdle',
+    tagline: 'Climb the word ladder to OMER',
+    live: true,
+    accentColor: '#fb923c',
   },
   {
     id: 'placeholder-6',
@@ -62,7 +62,7 @@ const GAMES = [
   },
 ]
 
-const LOCKED_GAME_IDS = new Set(['contain', 'heist'])
+const LOCKED_GAME_IDS = new Set(['contain', 'heist', 'omerdle'])
 
 export default function LandingPage() {
   const [topCogVisible, setTopCogVisible] = useState(false)

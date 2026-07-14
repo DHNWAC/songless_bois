@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "solve": "tsx scripts/solve-contain.ts",
-    "solve:heist": "tsx scripts/solve-heist.ts"
+    "solve:heist": "tsx scripts/solve-heist.ts",
+    "solve:omerdle": "tsx scripts/solve-omerdle.ts"
   },
   "dependencies": {
     "next": "16.2.9",
@@ -24,6 +25,7 @@
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
     "tsx": "^4.22.5",
-    "typescript": "^5"
+    "typescript": "^5",
+    "word-list": "^4.1.0"
   }
 }
