@@ -41,6 +41,10 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const rafRef = useRef<number | null>(null)
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Synchronous re-entrancy guard: `status` state only flips on the next
+  // render, so a second click/tap fired before that commit would otherwise
+  // still see status === 'playing' and submit/skip a second time.
+  const submittingRef = useRef(false)
 
   // Web Audio analyser graph (built lazily on first play)
   const audioCtxRef = useRef<AudioContext | null>(null)
@@ -50,7 +54,9 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
 
   const clipDuration = CLIP_DURATIONS[Math.min(clipIndex, CLIP_DURATIONS.length - 1)]
   const clipDurationRef = useRef(clipDuration)
-  clipDurationRef.current = clipDuration
+  useEffect(() => {
+    clipDurationRef.current = clipDuration
+  }, [clipDuration])
 
   const graphFailedRef = useRef(false)
 
@@ -191,11 +197,13 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
       finish(newGuesses, won)
     } else {
       setClipIndex(newGuesses.length)
+      submittingRef.current = false
     }
   }, [finish])
 
   const skip = () => {
-    if (status !== 'playing') return
+    if (submittingRef.current || status !== 'playing') return
+    submittingRef.current = true
     const newGuesses = [...guesses, '']
     setGuesses(newGuesses)
     setOutcomes([...outcomes, 'wrong'])
@@ -203,7 +211,8 @@ export default function SongGame({ song, index, total, onResult }: SongGameProps
   }
 
   const submitGuess = () => {
-    if (!selectedTrack || status !== 'playing') return
+    if (submittingRef.current || !selectedTrack || status !== 'playing') return
+    submittingRef.current = true
     const outcome = evaluateGuess(selectedTrack, song)
     const correct = outcome === 'correct'
     setOutcomes([...outcomes, outcome])

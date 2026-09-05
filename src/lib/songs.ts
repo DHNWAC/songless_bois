@@ -462,7 +462,7 @@ async function resolveSong(entry: PoolEntry): Promise<Song | null> {
 
 // Fixed master seed — one shuffle of the entire pool, shared by all players forever.
 // Day N gets songs at indices [(N-1)*3, (N-1)*3+1, (N-1)*3+2] — no repeats across days.
-const MASTER_SEED = 42
+const MASTER_SEED = 2026090501
 
 function seededRandom(seed: number) {
   let s = seed
@@ -486,18 +486,25 @@ function getMasterPool(): PoolEntry[] {
   return shuffle(SONG_POOL, seededRandom(MASTER_SEED))
 }
 
+/** Wrap a start index into the pool so day numbers past the pool's length cycle back to the start. */
+function wrapStart(start: number, poolLen: number): number {
+  return ((start % poolLen) + poolLen) % poolLen
+}
+
 export function getDayPoolEntries(dayNumber: number, size = 3): string[] {
   const pool = getMasterPool()
-  const start = (dayNumber - 1) * size
-  return pool.slice(start, start + size).map((e) => e.query)
+  const start = wrapStart((dayNumber - 1) * size, pool.length)
+  const entries = [...pool, ...pool].slice(start, start + size) // wrap across the pool boundary
+  return entries.map((e) => e.query)
 }
 
 export async function buildRound(size = ROUND_SIZE, dayNumber?: number): Promise<Song[]> {
   let entries: PoolEntry[]
   if (dayNumber !== undefined) {
     const pool = getMasterPool()
-    const start = (dayNumber - 1) * size
-    entries = pool.slice(start, start + size * 4) // grab extra in case some fail to resolve
+    const start = wrapStart((dayNumber - 1) * size, pool.length)
+    // grab extra in case some fail to resolve; doubled pool lets the window wrap past the end
+    entries = [...pool, ...pool].slice(start, start + size * 4)
   } else {
     entries = shuffle(SONG_POOL, seededRandom(Date.now()))
   }
@@ -524,7 +531,7 @@ function normalize(s: string): string {
     .toLowerCase()
     .replace(/\(.*?\)/g, '')
     .replace(/\[.*?\]/g, '')
-    .replace(/\bfeat\b.*/g, '')
+    .replace(/\b(feat|ft)\b\.?.*/g, '')
     .replace(/[^a-z0-9]/g, '')
     .trim()
 }

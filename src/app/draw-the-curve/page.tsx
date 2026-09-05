@@ -6,6 +6,7 @@ import AdminPanel from '@/components/draw-the-curve/AdminPanel'
 import Chart, { type ChartHandle } from '@/components/draw-the-curve/Chart'
 import ShareResult from '@/components/draw-the-curve/ShareResult'
 import { sha256Hex } from '@/lib/integrity'
+import { getAESTDateString } from '@/lib/aest'
 import { getDayNumber, getDailyPuzzle, getPuzzleAtIndex, msUntilAESTMidnight } from '@/lib/draw-the-curve/puzzles'
 import { scoreDrawing } from '@/lib/draw-the-curve/scoring'
 import { buildShareText } from '@/lib/draw-the-curve/share'
@@ -17,18 +18,6 @@ const MAX_GAP = 0.06
 
 // SHA-256 digest — the code itself never appears in the bundle.
 const ADMIN_CODE_HASH = 'b8dc2c143be8994682b08461f46487e05874e59dd9ab65cf973e3a3c67a763aa'
-
-function getAESTDateString(): string {
-  const now = new Date()
-  const aestOffset = 10 * 60
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60_000
-  const aestMs = utcMs + aestOffset * 60_000
-  const aest = new Date(aestMs)
-  const y = aest.getFullYear()
-  const m = String(aest.getMonth() + 1).padStart(2, '0')
-  const d = String(aest.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
 
 export default function DrawTheCurvePage() {
   const dayNumber = getDayNumber()
@@ -195,8 +184,6 @@ function PuzzleRound({ puzzle, dayNumber, isDaily, isPreview, onOpenAdmin }: Puz
       const updated = recordResult(puzzle.id, result.total, line, getAESTDateString(), isDaily)
       setStreak(updated.streak)
     }
-
-    setTimeout(() => setShowResult(true), 950)
   }
 
   const record = isPreview ? null : getRecord(puzzle.id)

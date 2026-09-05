@@ -1,11 +1,12 @@
 // Daily game state persisted in localStorage.
-// Day 1 epoch: 2026-06-29. Resets at midnight AEST (UTC+10).
+// Day 1 epoch: 2026-09-05. Resets at midnight AEST (UTC+10).
 
 import { getSigned, setSigned } from './integrity'
+import { getAESTDateString, msUntilAESTMidnight as sharedMsUntilAESTMidnight } from './aest'
 
 export const SONGS_PER_DAY = 3
 
-const EPOCH_DATE = '2026-06-29'
+const EPOCH_DATE = '2026-09-05'
 const STORAGE_KEY = 'jimsongdle_daily'
 
 // ── Multiplier contribution registry ────────────────────────────────────────
@@ -57,19 +58,6 @@ export function contributionsToMultiplier(contributions: Record<string, GameCont
 // Convenience: compute multiplier from current localStorage state
 export function loadMultiplier(): number {
   return contributionsToMultiplier(loadGameContributions())
-}
-
-function getAESTDateString(): string {
-  // AEST = UTC+10, no DST
-  const now = new Date()
-  const aestOffset = 10 * 60 // minutes
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60_000
-  const aestMs = utcMs + aestOffset * 60_000
-  const aest = new Date(aestMs)
-  const y = aest.getFullYear()
-  const m = String(aest.getMonth() + 1).padStart(2, '0')
-  const d = String(aest.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
 }
 
 export function getDayNumber(): number {
@@ -148,12 +136,5 @@ export function incrementSongsCompleted(state: DailyState): DailyState {
 
 // ms until next midnight AEST
 export function msUntilAESTMidnight(): number {
-  const aestOffset = 10 * 60 // minutes
-  const now = new Date()
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60_000
-  const aestMs = utcMs + aestOffset * 60_000
-  const aest = new Date(aestMs)
-  const midnight = new Date(aestMs)
-  midnight.setHours(24, 0, 0, 0)
-  return midnight.getTime() - aest.getTime()
+  return sharedMsUntilAESTMidnight()
 }

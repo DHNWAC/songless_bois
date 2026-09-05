@@ -1,26 +1,15 @@
 // Daily rotation for Draw the Curve — mirrors the epoch/day-number pattern
-// used by Omerdle/Heist/Contain (src/lib/daily.ts), reset at midnight AEST
+// used by the other daily games (src/lib/daily.ts), reset at midnight AEST
 // rather than the player's local midnight so everyone gets the same puzzle.
 
 import { decodePuzzles } from './codec'
 import type { Puzzle } from './types'
 import rawQueue from './queue.json'
+import { getAESTDateString, msUntilAESTMidnight as sharedMsUntilAESTMidnight } from '../aest'
 
-const EPOCH_DATE = '2026-07-20'
+const EPOCH_DATE = '2026-09-05'
 
 const QUEUE: Puzzle[] = decodePuzzles(rawQueue as unknown as string)
-
-function getAESTDateString(now: Date = new Date()): string {
-  // AEST = UTC+10, no DST.
-  const aestOffset = 10 * 60 // minutes
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60_000
-  const aestMs = utcMs + aestOffset * 60_000
-  const aest = new Date(aestMs)
-  const y = aest.getFullYear()
-  const m = String(aest.getMonth() + 1).padStart(2, '0')
-  const d = String(aest.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
 
 /** 1-based day number, matching the convention of the other daily games. */
 export function getDayNumber(now: Date = new Date()): number {
@@ -57,11 +46,5 @@ export function queueLength(): number {
 
 /** ms until the next AEST midnight rollover, for the "next puzzle in" countdown. */
 export function msUntilAESTMidnight(now: Date = new Date()): number {
-  const aestOffset = 10 * 60
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60_000
-  const aestMs = utcMs + aestOffset * 60_000
-  const aest = new Date(aestMs)
-  const midnight = new Date(aestMs)
-  midnight.setHours(24, 0, 0, 0)
-  return midnight.getTime() - aest.getTime()
+  return sharedMsUntilAESTMidnight(now)
 }

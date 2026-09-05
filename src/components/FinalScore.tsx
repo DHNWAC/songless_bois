@@ -11,6 +11,7 @@ import {
   saveGameContribution,
   JIMSONGDLE_MAX_BOOST,
 } from '@/lib/daily'
+import { getAESTDateString } from '@/lib/aest'
 import type { SongResult } from './SongGame'
 
 interface FinalScoreProps {
@@ -30,13 +31,6 @@ function buildEmojiGrid(r: SongResult): string {
 
 function scoreFor(r: SongResult): number {
   return r.solved ? CLIP_DURATIONS.length - r.attemptsUsed + 1 : 0
-}
-
-function getAESTDateString(): string {
-  const now = new Date()
-  const aestMs = now.getTime() + now.getTimezoneOffset() * 60_000 + 10 * 60 * 60_000
-  const d = new Date(aestMs)
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 }
 
 export default function FinalScore({ results, dayNumber }: FinalScoreProps) {
