@@ -41,47 +41,45 @@ export default function ShareResult({
     }, 2600)
   }
 
-  const stat = (label: string, value: string) => (
-    <div className="flex justify-between text-sm">
-      <span className="text-zinc-500">{label}</span>
-      <span className="text-white font-semibold">{value}</span>
-    </div>
-  )
+  const isFirstPlay = bestScore < 0 || bestScore === breakdown.total
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
       <div className="w-full max-w-sm bg-zinc-950 border border-zinc-800 rounded-3xl p-6 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
-        <div className="text-center">
-          <p className="text-4xl font-black text-white">
-            {breakdown.total}
-            <span className="text-lg text-zinc-500 font-medium"> / 100</span>
-          </p>
-          <p className="text-zinc-300 text-sm mt-2 leading-relaxed">{breakdown.verdict}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-white font-black text-lg">Share your result</p>
+          <button onClick={onClose} aria-label="Close" className="text-zinc-600 hover:text-zinc-300 text-xl leading-none transition-colors">
+            ×
+          </button>
         </div>
 
-        <div className="flex gap-2">
-          <div className="flex-1 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-3 text-center">
-            <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">Magnitude</p>
-            <p className="text-xl font-bold text-white mt-0.5">{breakdown.magnitude}</p>
+        {!isFirstPlay && (
+          <div className="flex items-center justify-center gap-4 text-sm text-zinc-400">
+            <span>Best <span className="text-white font-bold">{bestScore}</span></span>
+            <span className="text-zinc-700">·</span>
+            <span>Streak <span className="text-white font-bold">{streak}</span> 🔥</span>
           </div>
-          <div className="flex-1 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-3 text-center">
-            <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">Shape</p>
-            <p className="text-xl font-bold text-white mt-0.5">{breakdown.shape}</p>
-          </div>
-        </div>
+        )}
 
-        <div className="flex flex-col gap-1.5 bg-zinc-900/60 rounded-2xl p-4">
-          {stat('Best score', bestScore < 0 ? '—' : String(bestScore))}
-          {stat('Streak', `${streak} 🔥`)}
-        </div>
-
+        <pre
+          className="w-full whitespace-pre-wrap rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-200 text-xs leading-relaxed p-4"
+          style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace' }}
+        >
+          {shareText}
+        </pre>
+        {/* Off-screen but laid-out (not clip-hidden) — execCommand('copy')
+            needs a real, selectable textarea; the <pre> above is what's
+            shown, in a font we know renders the block-drawing glyphs
+            correctly (Geist Mono's subset drops them, rendering as broken
+            tofu boxes). Positioned like the hidden-textarea fallback in
+            share.ts, which this codebase already found execCommand needs. */}
         <textarea
           ref={textareaRef}
           readOnly
-          rows={7}
           value={shareText}
-          aria-label="Shareable result text"
-          className="w-full rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-200 text-xs font-mono leading-relaxed p-3 resize-none outline-none focus:border-blue-500"
+          aria-hidden="true"
+          tabIndex={-1}
+          style={{ position: 'fixed', top: 0, left: 0, width: 1, height: 1, padding: 0, border: 'none', opacity: 0.01 }}
         />
 
         <button
@@ -102,10 +100,6 @@ export default function ShareResult({
             {sourceName}
           </a>
         </p>
-
-        <button onClick={onClose} className="text-zinc-600 hover:text-zinc-400 text-sm transition-colors">
-          Close
-        </button>
       </div>
     </div>
   )
