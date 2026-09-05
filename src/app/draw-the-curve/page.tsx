@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import AdminPanel from '@/components/draw-the-curve/AdminPanel'
 import Chart, { type ChartHandle } from '@/components/draw-the-curve/Chart'
 import ShareResult from '@/components/draw-the-curve/ShareResult'
+import { sha256Hex } from '@/lib/integrity'
 import { getDayNumber, getDailyPuzzle, getPuzzleAtIndex, msUntilAESTMidnight } from '@/lib/draw-the-curve/puzzles'
 import { scoreDrawing } from '@/lib/draw-the-curve/scoring'
 import { buildShareText } from '@/lib/draw-the-curve/share'
@@ -13,6 +14,9 @@ import type { Puzzle } from '@/lib/draw-the-curve/types'
 
 const REQUIRED_COVERAGE = 0.92
 const MAX_GAP = 0.06
+
+// SHA-256 digest — the code itself never appears in the bundle.
+const ADMIN_CODE_HASH = 'b8dc2c143be8994682b08461f46487e05874e59dd9ab65cf973e3a3c67a763aa'
 
 function getAESTDateString(): string {
   const now = new Date()
@@ -31,6 +35,9 @@ export default function DrawTheCurvePage() {
   const dailyPuzzle = useMemo(() => getDailyPuzzle(dayNumber), [dayNumber])
 
   const [adminOpen, setAdminOpen] = useState(false)
+  const [codeOpen, setCodeOpen] = useState(false)
+  const [code, setCode] = useState('')
+  const [codeError, setCodeError] = useState(false)
   const [adminIndex, setAdminIndex] = useState<number | null>(null)
   const puzzle = adminIndex !== null ? getPuzzleAtIndex(adminIndex) : dailyPuzzle
   const isDaily = puzzle.id === dailyPuzzle.id
@@ -47,8 +54,57 @@ export default function DrawTheCurvePage() {
         dayNumber={dayNumber}
         isDaily={isDaily}
         isPreview={isPreview}
-        onOpenAdmin={() => setAdminOpen(true)}
+        onOpenAdmin={() => { setCode(''); setCodeError(false); setCodeOpen(true) }}
       />
+
+      {codeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-xs bg-zinc-950 border border-zinc-800 rounded-3xl p-6 flex flex-col gap-4 items-center">
+            <p className="text-zinc-500 text-xs uppercase tracking-widest font-semibold">Admin access</p>
+            <p className="text-white font-black text-lg">Enter code</p>
+            <div className="flex gap-3">
+              {[0, 1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="w-10 h-12 rounded-xl border flex items-center justify-center text-xl font-black"
+                  style={{
+                    borderColor: codeError ? '#7f1d1d' : code.length > i ? 'var(--accent)' : '#3f3f46',
+                    backgroundColor: codeError ? 'rgba(127,29,29,0.2)' : code.length > i ? 'var(--accent-dim)' : 'transparent',
+                    color: codeError ? '#f87171' : 'white',
+                  }}
+                >
+                  {code.length > i ? '●' : ''}
+                </div>
+              ))}
+            </div>
+            {codeError && <p className="text-red-400 text-xs">Wrong code</p>}
+            <div className="grid grid-cols-3 gap-2 w-full">
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'].map((k) => (
+                <button
+                  key={k}
+                  disabled={k === ''}
+                  onClick={() => {
+                    if (k === '⌫') { setCode((c) => c.slice(0, -1)); setCodeError(false); return }
+                    if (k === '') return
+                    const next = code + k
+                    setCode(next)
+                    if (next.length === 4) {
+                      void sha256Hex(next).then((h) => {
+                        if (h === ADMIN_CODE_HASH) { setCodeOpen(false); setAdminOpen(true) }
+                        else { setCodeError(true); setTimeout(() => { setCode(''); setCodeError(false) }, 800) }
+                      })
+                    }
+                  }}
+                  className="py-3.5 rounded-2xl text-white font-bold text-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 active:scale-95 transition-all disabled:opacity-0"
+                >
+                  {k}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setCodeOpen(false)} className="text-zinc-600 hover:text-zinc-400 text-sm transition-colors">Cancel</button>
+          </div>
+        </div>
+      )}
 
       {adminOpen && (
         <AdminPanel
@@ -271,11 +327,6 @@ function PuzzleRound({ puzzle, dayNumber, isDaily, isPreview, onOpenAdmin }: Puz
           </div>
         )}
 
-        <p className="text-zinc-600 text-xs leading-relaxed">
-          Sketch how you think the real number changed over time, then reveal the actual data. You&apos;re scored on
-          both how close your levels were and whether you got the shape of the trend right — a flat guess through the
-          middle won&apos;t save you.
-        </p>
       </div>
 
       {showResult && effectiveBreakdown && (
