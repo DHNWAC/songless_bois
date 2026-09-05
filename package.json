@@ -6,10 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "solve": "tsx scripts/solve-contain.ts",
-    "solve:heist": "tsx scripts/solve-heist.ts",
-    "solve:omerdle": "tsx scripts/solve-omerdle.ts"
+    "lint": "eslint"
   },
   "dependencies": {
     "next": "16.2.9",
