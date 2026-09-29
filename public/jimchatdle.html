@@ -68,6 +68,13 @@
   .call { margin-top: auto; border: 0; background: var(--ink); color: #fff; box-shadow: 0 10px 22px -12px rgba(30, 31, 36, .7); }
   .call:hover { background: #33343b; }
   .back { border: 2px dashed var(--ink-soft); background: none; color: var(--ink); }
+  .moves { display: flex; gap: 10px; margin-top: auto; }
+  .moves .pill { flex: 1; width: auto; min-width: 0; padding: 15px 10px; }
+  .solve-btn { border: 0; background: var(--tomato); color: #fff; box-shadow: 0 10px 22px -12px rgba(255, 95, 59, .8); }
+  .solve-btn:hover { background: #ff7555; }
+  .solve { display: flex; flex-direction: column; gap: 10px; }
+  .solve input { width: 100%; padding: 14px 16px; border: 2px solid var(--ink); border-radius: 16px; background: #fff; color: var(--ink); font: 700 1.05rem var(--font); }
+  .solve .pill { align-self: stretch; width: auto; }
   .landed small { font-size: 1.1rem; opacity: .8; margin-right: 6px; }
   .reset { align-self: center; border: 0; background: none; color: var(--ink-soft); font-size: .7rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 3px; opacity: .7; }
   .reset:hover { opacity: 1; }
@@ -175,7 +182,14 @@
   </article>
 
   <p class="status" id="status" aria-live="polite"></p>
-  <button class="pill call" id="callBtn" type="button">I know who said it →</button>
+  <div class="moves">
+    <button class="pill solve-btn" id="solveBtn" type="button">Solve it →</button>
+    <button class="pill call" id="callBtn" type="button">I know who said it →</button>
+  </div>
+  <form class="solve" id="solveForm" hidden>
+    <input id="solveInput" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="Type the whole message" aria-label="The whole message">
+    <button class="pill call">Lock it in</button>
+  </form>
   <button class="pill back" id="backBtn" type="button" hidden>← Back to letters</button>
   <section class="keyboard" id="keyboard" aria-label="Letters"></section>
   <section class="names" id="names" aria-label="Who sent it?" hidden></section>
@@ -188,7 +202,8 @@
   <ol>
     <li>Pick a mode: a message from the group chat, a famous movie line, or a famous quote. It's hidden. Tap or type letters to reveal it.</li>
     <li>Each wrong letter costs a life. Run out and the message is revealed anyway. Shorter messages get more lives.</li>
-    <li>Hit <b>I know who said it</b> whenever you're ready. You get 3 calls. A wrong call sends you back to the letters.</li>
+    <li>Know it already? Hit <b>Solve it</b> and type the whole thing. The more that's still hidden, the bigger the bonus. A wrong answer costs 2 lives.</li>
+    <li>Hit <b>I know who said it</b> whenever you're ready. You get 2 calls. A wrong call sends you back to the letters.</li>
     <li>A right call doesn't end the game. You still finish the message.</li>
     <li>You get two scores out of 50 that add up to 100. <b>Phrase</b> rewards solving with lives to spare. <b>Who</b> rewards calling it early and in fewer calls.</li>
     <li>There's one new puzzle per mode each day. Copy your result and brag in the chat.</li>
@@ -504,7 +519,8 @@ const SPEECHES = [
   ["Archimedes", "Give me a lever long enough and I shall move the world"],
 ].map(([from, text]) => ({ from, text }));
 
-const SENDER_TRIES = 3;
+const SENDER_TRIES = 2;
+const SOLVE_COST = 2; // lives lost for typing the wrong phrase
 const LAUNCH = new Date(2026, 8, 29); // puzzle #1 in every mode (months are 0-based)
 const CHOICES = 8; // movie/speech modes show the answer plus 7 decoys
 const ADMIN_HASH = "b8dc2c143be8994682b08461f46487e05874e59dd9ab65cf973e3a3c67a763aa"; // sha256 of the admin code
@@ -636,18 +652,43 @@ function save() {
   if (game.practice) return;
   try {
     const store = loadStore();
-    localStorage.setItem(M().key, JSON.stringify({ ...store, [game.day]: { guessed: game.guessed, senderGuesses: game.senderGuesses, calledHidden: game.calledHidden } }));
+    const { guessed, senderGuesses, calledHidden, solvedAt, badSolves } = game;
+    localStorage.setItem(M().key, JSON.stringify({ ...store, [game.day]: { guessed, senderGuesses, calledHidden, solvedAt, badSolves } }));
   } catch { /* not persisted: private mode or storage blocked */ }
 }
 
 // ---- game state ----
+const num = (v) => (typeof v === "number" ? v : null);
+// solvedAt: share of the message still hidden when it was typed in. badSolves: wrong typed answers.
+const practiceGame = (puzzle) => ({ day: null, practice: true, puzzle, guessed: [], senderGuesses: [], calledHidden: null, solvedAt: null, badSolves: 0 });
 function startDaily() {
   const saved = savedGame(loadStore(), TODAY);
-  return { day: TODAY, practice: false, puzzle: puzzleFor(TODAY), guessed: saved?.guessed ?? [], senderGuesses: saved?.senderGuesses ?? [], calledHidden: typeof saved?.calledHidden === "number" ? saved.calledHidden : null };
+  return {
+    day: TODAY, practice: false, puzzle: puzzleFor(TODAY),
+    guessed: saved?.guessed ?? [], senderGuesses: saved?.senderGuesses ?? [],
+    calledHidden: num(saved?.calledHidden), solvedAt: num(saved?.solvedAt), badSolves: num(saved?.badSolves) ?? 0,
+  };
 }
 function startPractice() {
   const pool = M().bank.filter((m) => m !== game.puzzle);
-  return { day: null, practice: true, puzzle: pool[Math.floor(Math.random() * pool.length)], guessed: [], senderGuesses: [], calledHidden: null };
+  return practiceGame(pool[Math.floor(Math.random() * pool.length)]);
+}
+
+// Letters only, so case, punctuation, spacing and accents never matter.
+const lettersOf = (s) => s.toLowerCase().normalize("NFD").replace(/[^a-z]/g, "");
+function editDistance(a, b) {
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const row = [i];
+    for (let j = 1; j <= b.length; j++) row[j] = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = row;
+  }
+  return prev[b.length];
+}
+// About one typo allowed per 12 letters, so "I'll be back" must be exact but long lines forgive a slip.
+function typedMatches(typed, text) {
+  const want = lettersOf(text);
+  return editDistance(lettersOf(typed), want) <= Math.floor(want.length / 12);
 }
 
 // Fewer distinct letters leaves more of the alphabet to miss with, so those messages get more lives.
@@ -659,21 +700,25 @@ function progress(g) {
   const letters = new Set(chars);
   const lives = livesFor(letters.size);
   const misses = g.guessed.filter((l) => !letters.has(l));
-  const solved = [...letters].every((l) => g.guessed.includes(l));
+  const solvedAt = g.solvedAt ?? null;
+  const solved = solvedAt !== null || [...letters].every((l) => g.guessed.includes(l));
   const gotSender = g.senderGuesses.includes(g.puzzle.from);
-  const lettersOver = solved || misses.length >= lives;
+  const livesUsed = misses.length + SOLVE_COST * (g.badSolves ?? 0);
+  const lettersOver = solved || livesUsed >= lives;
   const senderOver = gotSender || g.senderGuesses.length >= SENDER_TRIES;
-  const livesLeft = Math.max(0, lives - misses.length);
+  const livesLeft = Math.max(0, lives - livesUsed);
   const revealed = chars.filter((c) => g.guessed.includes(c)).length / chars.length;
   // share of the message hidden right now (0 once it's over and fully shown)
   const hiddenNow = lettersOver ? 0 : 1 - revealed;
-  // Phrase /50: solving is 25 + up to 25 for lives kept; failing gets up to 20 for what you uncovered.
-  const phraseScore = solved ? Math.round(25 + (25 * livesLeft) / lives) : lettersOver ? Math.round(20 * revealed) : 0;
-  // Sender /50: 20 for the right name + up to 30 for how hidden the message was when called, cut by wrong calls.
-  const tryMultiplier = [1, 0.6, 0.3][g.senderGuesses.length - 1] ?? 0;
+  // Phrase /50: solving is 15 + up to 15 for lives kept + up to 20 for typing it in while still hidden.
+  // Failing gets up to 15 for what you uncovered, so it never beats a solve.
+  const phraseScore = solved ? Math.round(15 + (15 * livesLeft) / lives + 20 * (solvedAt ?? 0))
+    : lettersOver ? Math.round(15 * revealed) : 0;
+  // Sender /50: 20 for the right name + up to 30 for how hidden the message was when called, halved by a wrong call.
+  const tryMultiplier = [1, 0.5][g.senderGuesses.length - 1] ?? 0;
   const senderScore = gotSender ? Math.round((20 + 30 * (g.calledHidden ?? 0)) * tryMultiplier) : 0;
   return {
-    letters, misses, solved, gotSender, senderOver, lives, livesLeft, hiddenNow,
+    letters, misses, solved, solvedAt, gotSender, senderOver, lives, livesLeft, hiddenNow,
     phraseScore, senderScore, score: phraseScore + senderScore,
     triesLeft: SENDER_TRIES - g.senderGuesses.length,
     phase: !lettersOver ? "letters" : senderOver ? "done" : "sender",
@@ -684,11 +729,13 @@ let game = startDaily();
 let note = "";
 let freshLetter = null;
 let calling = false; // player hit "Call it" and is picking a name mid-letters
+let solving = false; // player hit "Solve it" and is typing the phrase
 let isAdmin = false; // ponytail: in-memory only, re-enter the code after a reload
 
 function load(g) {
   game = g;
   calling = false;
+  solving = false;
   note = "";
   buildNames();
   render();
@@ -704,12 +751,36 @@ const pickingName = (p) => !p.senderOver && (p.phase === "sender" || (p.phase ==
 
 function setCalling(on) {
   calling = on;
+  solving = false;
   note = "";
   render();
 }
 
+function setSolving(on) {
+  solving = on;
+  calling = false;
+  note = "";
+  render();
+  if (on) $("solveInput").focus();
+}
+
+function submitSolve(typed) {
+  const before = progress(game);
+  if (before.phase !== "letters" || !solving || !lettersOf(typed)) return;
+  const right = typedMatches(typed, game.puzzle.text);
+  game = right ? { ...game, solvedAt: before.hiddenNow } : { ...game, badSolves: (game.badSolves ?? 0) + 1 };
+  solving = false;
+  const p = progress(game);
+  if (right) note = p.phase === "sender" ? `Nailed it at ${Math.round(before.hiddenNow * 100)}% hidden!` : "";
+  else if (p.phase === "letters") note = `Not quite. That cost ${SOLVE_COST} lives, ${plural(p.livesLeft, "life", "lives")} left.`;
+  else note = "";
+  if (!right) shake();
+  save();
+  render();
+}
+
 function guessLetter(l) {
-  if (progress(game).phase !== "letters" || calling || game.guessed.includes(l)) return;
+  if (progress(game).phase !== "letters" || calling || solving || game.guessed.includes(l)) return;
   game = { ...game, guessed: [...game.guessed, l] };
   const p = progress(game);
   const hits = [...game.puzzle.text.toLowerCase()].filter((c) => c === l).length;
@@ -742,7 +813,8 @@ function shareText(p) {
   const hearts = "❤️".repeat(p.livesLeft) + "🖤".repeat(p.lives - p.livesLeft);
   const who = game.senderGuesses.map((n) => (n === game.puzzle.from ? "🟩" : "🟥")).join("");
   const early = game.calledHidden > 0 ? ` at ${Math.round(game.calledHidden * 100)}% hidden` : "";
-  return `${title} · ${p.score}/100\n💬 Phrase ${p.phraseScore}/50 ${hearts}\n👤 ${cap(M().noun)} ${p.senderScore}/50 ${who}${early}`;
+  const typed = p.solvedAt > 0 ? ` typed at ${Math.round(p.solvedAt * 100)}% hidden` : "";
+  return `${title} · ${p.score}/100\n💬 Phrase ${p.phraseScore}/50 ${hearts}${typed}\n👤 ${cap(M().noun)} ${p.senderScore}/50 ${who}${early}`;
 }
 
 function stats() {
@@ -776,8 +848,11 @@ function render() {
   renderKeyboard(p);
   renderNames(p);
   renderResult(p);
-  $("callBtn").hidden = !(p.phase === "letters" && !p.senderOver && !calling);
-  $("backBtn").hidden = !(p.phase === "letters" && calling);
+  const picking = calling || solving;
+  $("callBtn").hidden = !(p.phase === "letters" && !p.senderOver && !picking);
+  $("solveBtn").hidden = !(p.phase === "letters" && !picking);
+  $("solveForm").hidden = !(p.phase === "letters" && solving);
+  $("backBtn").hidden = !(p.phase === "letters" && picking);
   $("status").textContent = note || defaultNote(p);
   freshLetter = null;
 }
@@ -785,6 +860,7 @@ function render() {
 const puzzleLabel = () => (game.practice ? "Practice" : `No. ${String(game.day + 1).padStart(3, "0")}`);
 
 function defaultNote(p) {
+  if (p.phase === "letters" && solving) return `Type the whole message. Wrong costs ${SOLVE_COST} lives (${p.livesLeft} left).`;
   if (p.phase === "letters" && calling) return `Who said it? (${plural(p.triesLeft, "call", "calls")} left)`;
   if (p.phase === "letters" && p.gotSender) return "Sender locked in. Now finish the message.";
   if (p.phase === "letters" && p.senderOver) return "Out of calls. Finish the message for points.";
@@ -809,7 +885,7 @@ function renderBubble(p) {
       } else {
         const l = ch.toLowerCase();
         const known = game.guessed.includes(l);
-        s.className = "slot" + (known ? " shown" : revealAll ? " missed" : "") + (known && l === freshLetter ? " pop" : "");
+        s.className = "slot" + (known || p.solved ? " shown" : revealAll ? " missed" : "") + (known && l === freshLetter ? " pop" : "");
         s.textContent = known || revealAll ? ch : "";
       }
       w.append(s);
@@ -861,7 +937,7 @@ function buildKeyboard() {
 }
 
 function renderKeyboard(p) {
-  $("keyboard").hidden = p.phase !== "letters" || calling;
+  $("keyboard").hidden = p.phase !== "letters" || calling || solving;
   for (const b of document.querySelectorAll(".key")) {
     const l = b.dataset.key;
     const used = game.guessed.includes(l);
@@ -917,7 +993,8 @@ function renderResult(p) {
   const s = game.practice ? null : stats();
   const from = game.puzzle.from;
   const headline = p.score >= 80 ? "Psychic." : p.score >= 55 ? "Called it." : p.score > 0 ? "Scraped it." : "Unlucky.";
-  const phraseDetail = p.solved ? `Solved, ${plural(p.misses.length, "miss", "misses")}` : "Ran out of lives";
+  const phraseDetail = !p.solved ? "Ran out of lives"
+    : `${p.solvedAt > 0 ? `Typed it at ${Math.round(p.solvedAt * 100)}% hidden` : "Solved"}, ${plural(p.lives - p.livesLeft, "life", "lives")} lost`;
   const senderDetail = !p.gotSender ? "Got away"
     : `${game.calledHidden > 0 ? `Called at ${Math.round(game.calledHidden * 100)}% hidden` : "Named at the end"}, ${plural(game.senderGuesses.length, "call", "calls")}`;
   const guesses = game.senderGuesses
@@ -988,12 +1065,19 @@ function shake() {
 // ---- boot ----
 document.addEventListener("keydown", (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey || document.querySelector("dialog[open]")) return;
-  if (e.key === "Escape" && calling) setCalling(false);
+  if (e.key === "Escape" && (calling || solving)) setCalling(false);
+  else if (e.target.closest("input, select")) return;
   else if (/^[a-z]$/i.test(e.key)) guessLetter(e.key.toLowerCase());
 });
 $("helpBtn").addEventListener("click", () => $("help").showModal());
 $("callBtn").addEventListener("click", () => setCalling(true));
 $("backBtn").addEventListener("click", () => setCalling(false));
+$("solveBtn").addEventListener("click", () => setSolving(true));
+$("solveForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  submitSolve($("solveInput").value);
+  $("solveInput").value = "";
+});
 $("resetBtn").addEventListener("click", () => {
   if (!confirm(`Wipe today's ${M().tab} game and all your ${M().tab} stats?`)) return;
   try { localStorage.removeItem(M().key); } catch { /* nothing was saved anyway */ }
@@ -1027,7 +1111,7 @@ $("adminLock").addEventListener("submit", async (e) => {
 });
 $("adminPlay").addEventListener("click", () => {
   $("admin").close();
-  load({ day: null, practice: true, puzzle: M().order[$("adminPick").value], guessed: [], senderGuesses: [], calledHidden: null });
+  load(practiceGame(M().order[$("adminPick").value]));
 });
 setInterval(tickCountdown, 1000);
 
