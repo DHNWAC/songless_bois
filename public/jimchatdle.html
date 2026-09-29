@@ -348,6 +348,7 @@ const MESSAGES = Object.entries({
     "The market is doing something weird today",
     "Compound interest is the eighth wonder of the world",
     "Who wants in on my business idea",
+    "Travis wanted, you know, a secure concert before and after Astroworld Houston",
   ],
   Diya: [
     "Just landed, the view from the plane was unreal",
@@ -617,7 +618,7 @@ function chibi(name) {
 
 // key: bump when a bank changes, or old saves point at new puzzles. pinned: puzzles #1, #2, ... in that order.
 const MODES = Object.fromEntries(Object.entries({
-  friends: { tab: "Friends", icon: "💬", bank: MESSAGES, key: "jimchatdle:v5", seed: 20260929, pinned: ["Has everyone got their secret Santa sorted?"], kicker: "someone in the chat said…", noun: "sender", by: "Sent by" },
+  friends: { tab: "Friends", icon: "💬", bank: MESSAGES, key: "jimchatdle:v6", seed: 20260929, pinned: ["Travis wanted, you know, a secure concert before and after Astroworld Houston", "Has everyone got their secret Santa sorted?"], kicker: "someone in the chat said…", noun: "sender", by: "Sent by" },
   movies: { tab: "Movies", icon: "🎬", bank: MOVIES, key: "jimchatdle:movies:v1", seed: 20260930, pinned: [], kicker: "a famous movie line…", noun: "actor", by: "Said by" },
   speeches: { tab: "Speeches", icon: "🎤", bank: SPEECHES, key: "jimchatdle:speeches:v1", seed: 20260931, pinned: [], kicker: "someone famous once said…", noun: "speaker", by: "Said by" },
 }).map(([id, m]) => {
