@@ -27,57 +27,13 @@
   [hidden] { display: none !important; }
   body { min-height: 100dvh; background: var(--cream); color: var(--ink); font-family: var(--font); font-weight: 500; }
   button { font: inherit; color: inherit; cursor: pointer; }
-  button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .label { font-size: .72rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
 
-  .app { max-width: 560px; min-height: 100dvh; margin: 0 auto; padding: 24px 16px 32px; display: flex; flex-direction: column; gap: 20px; }
+  .app { max-width: 560px; min-height: 100dvh; margin: 0 auto; padding: 24px 16px 32px; display: flex; flex-direction: column; gap: 18px; }
 
-  /* ---- the orange message card ---- */
-  .card { background: var(--tomato); color: #fff; border-radius: 28px; padding: 22px 24px 20px; box-shadow: var(--shadow); }
-  .card-top { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 1.05rem; }
-  .card-top .no { margin-left: auto; }
-  .help { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .7); background: none; font-weight: 900; font-size: .9rem; }
-  .help:hover { background: rgba(255, 255, 255, .15); }
-  .kicker { font-family: var(--hand); color: var(--yellow); font-size: 1.6rem; transform: rotate(-2deg); margin: 26px 0 10px; }
-
-  .message { display: flex; flex-wrap: wrap; column-gap: .42em; row-gap: .2em; font-weight: 800; font-size: clamp(1.6rem, 7vw, 2.3rem); line-height: 1.2; letter-spacing: -.01em; }
-  .message.shake { animation: shake .35s; }
-  .word { display: inline-flex; }
-  .slot { display: inline-block; }
-  /* only still-hidden letters reserve a blank; revealed ones sit at natural width */
-  .slot:not(.fixed, .shown, .missed) { min-width: .55em; margin: 0 .05em; border-bottom: 3px solid rgba(255, 255, 255, .6); }
-  .slot.missed { color: var(--yellow); }
-  .slot.pop { animation: pop .3s ease-out; }
-
-  .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 26px; }
-  .signed { display: flex; align-items: center; gap: 8px; font-family: var(--hand); font-size: 1.45rem; }
-  .avatar { flex: none; width: 42px; height: 42px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; font: 900 1rem var(--font); border: 2px dashed rgba(255, 255, 255, .7); }
-  .avatar.known { border: 0; animation: pop .35s ease-out; }
-  .avatar svg { width: 100%; height: 100%; display: block; }
-  .lives { display: flex; align-items: center; gap: 4px; }
-  .lives::before { content: "Lives"; font-size: .68rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; margin-right: 4px; opacity: .85; }
-  .life { font-size: 1.15rem; line-height: 1; color: #fff; transition: color .2s, transform .2s; }
-  .life.lost { color: rgba(255, 255, 255, .3); transform: scale(.8); }
-
-  .status { min-height: 1.4em; text-align: center; font-weight: 700; color: var(--ink-soft); }
-
-  /* ---- keyboard ---- */
-  .keyboard { display: flex; flex-direction: column; gap: 8px; }
-  .pill.call, .pill.back { flex: none; align-self: center; width: min(100%, 320px); }
-  .call { margin-top: auto; border: 0; background: var(--ink); color: #fff; box-shadow: 0 10px 22px -12px rgba(30, 31, 36, .7); }
-  .call:hover { background: #33343b; }
-  .back { border: 2px dashed var(--ink-soft); background: none; color: var(--ink); }
-  .moves { display: flex; gap: 10px; margin-top: auto; }
-  .moves .pill { flex: 1; width: auto; min-width: 0; padding: 15px 10px; }
-  .solve-btn { border: 0; background: var(--tomato); color: #fff; box-shadow: 0 10px 22px -12px rgba(255, 95, 59, .8); }
-  .solve-btn:hover { background: #ff7555; }
-  .solve { display: flex; flex-direction: column; gap: 10px; }
-  .solve input { width: 100%; padding: 14px 16px; border: 2px solid var(--ink); border-radius: 16px; background: #fff; color: var(--ink); font: 700 1.05rem var(--font); }
-  .solve .pill { align-self: stretch; width: auto; }
-  .landed small { font-size: 1.1rem; opacity: .8; margin-right: 6px; }
-  .reset { align-self: center; border: 0; background: none; color: var(--ink-soft); font-size: .7rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 3px; opacity: .7; }
-  .reset:hover { opacity: 1; }
+  /* ---- top bar + round tabs ---- */
   .top { display: flex; justify-content: space-between; align-items: center; }
   .home { color: var(--ink-soft); font-size: .85rem; font-weight: 700; text-decoration: none; }
   .home:hover { color: var(--ink); }
@@ -89,23 +45,43 @@
   .mode:hover:not([aria-pressed="true"]) { transform: translateY(-1px); box-shadow: 0 0 0 2px var(--tomato); }
   .mode.done::after { content: "✓ done"; font-size: .58rem; letter-spacing: .1em; opacity: .65; }
   .mode[aria-pressed="true"] { background: var(--ink); color: #fff; box-shadow: 0 10px 22px -12px rgba(30, 31, 36, .7); }
-  .breakdown { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .part { font-size: 1.6rem; font-weight: 900; margin-top: 2px; }
-  .part small { font-size: .9rem; opacity: .75; }
-  .breakdown .detail { font-size: .82rem; }
-  .kb-row { display: flex; justify-content: center; gap: 6px; }
-  .key {
-    flex: 1; max-width: 46px; height: 54px; border: 0; border-radius: 10px;
-    background: #fff; font-weight: 800; font-size: 1.05rem; text-transform: uppercase;
-    box-shadow: 0 2px 0 var(--rule); transition: background .15s, transform .08s;
-  }
-  .key:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 3px 0 var(--rule); }
-  .key:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
-  .key.hit { background: var(--yellow); box-shadow: none; }
-  .key.miss { background: transparent; color: #b3aea4; box-shadow: inset 0 0 0 1.5px var(--rule); }
-  .key:disabled { cursor: default; }
 
-  /* ---- who said it ---- */
+  /* ---- the orange quote card ---- */
+  .card { background: var(--tomato); color: #fff; border-radius: 28px; padding: 22px 24px 20px; box-shadow: var(--shadow); }
+  .card-top { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 1.05rem; }
+  .card-top .no { margin-left: auto; }
+  .help { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .7); background: none; font-weight: 900; font-size: .9rem; }
+  .help:hover { background: rgba(255, 255, 255, .15); }
+  .kicker { font-family: var(--hand); color: var(--yellow); font-size: 1.6rem; transform: rotate(-2deg); margin: 26px 0 10px; }
+
+  .message { display: flex; flex-wrap: wrap; align-items: flex-end; column-gap: .38em; row-gap: .25em; font-weight: 800; font-size: clamp(1.6rem, 7vw, 2.3rem); line-height: 1.2; letter-spacing: -.01em; }
+  .message.shake { animation: shake .35s; }
+  .gap { display: inline-block; height: 1.05em; border-bottom: 3px solid rgba(255, 255, 255, .55); }
+  .word.pop { animation: pop .35s ease-out backwards; }
+  .src { margin-top: 14px; font-family: var(--hand); font-size: 1.35rem; color: var(--yellow); }
+
+  .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 26px; }
+  .signed { display: flex; align-items: center; gap: 8px; font-family: var(--hand); font-size: 1.45rem; }
+  .avatar { flex: none; width: 42px; height: 42px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; font: 900 1rem var(--font); border: 2px dashed rgba(255, 255, 255, .7); }
+  .avatar.known { border: 0; animation: pop .35s ease-out; }
+  .avatar svg { width: 100%; height: 100%; display: block; }
+  .turns { display: flex; align-items: center; gap: 5px; }
+  .turns::before { content: "Turns"; font-size: .68rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; margin-right: 4px; opacity: .85; }
+  .turn { width: 11px; height: 11px; border-radius: 50%; background: rgba(255, 255, 255, .3); transition: background .2s, box-shadow .2s; }
+  .turn.now { background: #fff; box-shadow: 0 0 0 3px rgba(255, 255, 255, .35); }
+  .turn.pass { background: none; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .75); }
+  .turn.miss { background: var(--ink); }
+  .turn.hit { background: var(--yellow); }
+
+  .status { min-height: 1.4em; text-align: center; font-weight: 700; color: var(--ink-soft); }
+
+  /* ---- guessing ---- */
+  .guess { display: flex; gap: 8px; }
+  .guess input { flex: 1; min-width: 0; padding: 14px 16px; border: 2px solid var(--ink); border-radius: 16px; background: #fff; color: var(--ink); font: 700 1.05rem var(--font); }
+  .go { flex: none; padding: 0 22px; border: 0; border-radius: 16px; background: var(--ink); color: #fff; font-size: .78rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
+  .go:hover { background: #33343b; }
+  .skip { align-self: center; width: min(100%, 320px); padding: 13px 18px; border: 2px dashed var(--ink-soft); border-radius: 99px; background: none; font-size: .74rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
+  .skip:hover { border-style: solid; }
   .names { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
   .name {
     display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 6px; min-width: 0; text-align: left;
@@ -116,6 +92,8 @@
   .name .dot { flex: none; width: 34px; height: 34px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--cream); }
   .name .dot svg { width: 100%; height: 100%; display: block; }
   .name.wrong { opacity: .35; text-decoration: line-through; cursor: default; box-shadow: none; }
+  .reset { align-self: center; margin-top: auto; border: 0; background: none; color: var(--ink-soft); font-size: .7rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 3px; opacity: .7; }
+  .reset:hover { opacity: 1; }
 
   /* ---- the blue result card ---- */
   .result { display: flex; flex-direction: column; gap: 12px; padding: 20px 22px 22px; border-radius: 28px; background: var(--blue); color: #fff; box-shadow: var(--shadow); transform: rotate(-1deg); animation: rise .45s ease-out; }
@@ -129,7 +107,10 @@
   .who { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 1.6rem; font-weight: 900; }
   .who .avatar { width: 48px; height: 48px; border: 0; background: var(--cream); }
   .landed { font-size: 2.2rem; font-weight: 900; line-height: 1; color: var(--yellow); letter-spacing: -.02em; margin-top: 2px; }
-  .detail { font-weight: 700; opacity: .9; }
+  .landed small { font-size: 1.1rem; opacity: .8; margin-right: 6px; }
+  .part { font-size: 1.6rem; font-weight: 900; margin-top: 2px; }
+  .part small { font-size: .9rem; opacity: .75; }
+  .detail { font-weight: 700; opacity: .9; margin-top: 4px; }
   .stats { display: flex; gap: 24px; padding-top: 10px; border-top: 1.5px solid rgba(255, 255, 255, .25); }
   .stats div { display: flex; flex-direction: column-reverse; }
   .stats dd { font-size: 1.5rem; font-weight: 900; }
@@ -143,7 +124,7 @@
   .pill.dashed:hover { background: rgba(255, 255, 255, .1); }
   .next { text-align: center; font-size: .7rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; opacity: .85; }
 
-  /* ---- how to play ---- */
+  /* ---- dialogs ---- */
   dialog { max-width: min(420px, calc(100vw - 32px)); padding: 26px 24px; border: 0; border-radius: 24px; background: var(--paper); color: var(--ink); box-shadow: var(--shadow); }
   dialog::backdrop { background: rgba(30, 31, 36, .45); }
   dialog h2 { display: inline; font-size: 1.7rem; font-weight: 900; background: linear-gradient(transparent 55%, var(--yellow) 55%); padding: 0 4px; }
@@ -166,8 +147,9 @@
     <a class="home" href="/">← Back</a>
     <button class="gear" id="adminBtn" type="button" aria-label="Admin">⚙</button>
   </nav>
-  <div class="modes" id="modes" role="group" aria-label="Game mode"></div>
-  <article class="card" aria-label="The mystery message">
+  <div class="modes" id="modes" role="group" aria-label="Round"></div>
+
+  <article class="card" aria-label="The mystery quote">
     <header class="card-top">
       <span class="brand">Jimchatdle</span>
       <span class="no" id="puzzleTag"></span>
@@ -176,24 +158,21 @@
     <p class="kicker" id="kicker"></p>
     <div class="message" id="bubble" aria-hidden="true"></div>
     <p class="sr-only" id="srMsg"></p>
+    <p class="src" id="src" hidden></p>
     <footer class="card-foot">
       <p class="signed"><span class="avatar" id="avatar" aria-hidden="true">?</span><span id="senderName"></span></p>
-      <div class="lives" id="lives" role="img"></div>
+      <div class="turns" id="turns" role="img"></div>
     </footer>
   </article>
 
   <p class="status" id="status" aria-live="polite"></p>
-  <div class="moves">
-    <button class="pill solve-btn" id="solveBtn" type="button">Solve it →</button>
-    <button class="pill call" id="callBtn" type="button">I know who said it →</button>
-  </div>
-  <form class="solve" id="solveForm" hidden>
-    <input id="solveInput" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="Type the whole message" aria-label="The whole message">
-    <button class="pill call">Lock it in</button>
+  <form class="guess" id="guessForm" hidden>
+    <input id="guessInput" list="nameList" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="go" placeholder="Who said it?" aria-label="Who said it?">
+    <datalist id="nameList"></datalist>
+    <button class="go" type="submit">Guess</button>
   </form>
-  <button class="pill back" id="backBtn" type="button" hidden>← Back to letters</button>
-  <section class="keyboard" id="keyboard" aria-label="Letters"></section>
-  <section class="names" id="names" aria-label="Who sent it?" hidden></section>
+  <section class="names" id="names" aria-label="Who said it?" hidden></section>
+  <button class="skip" id="skipBtn" type="button" hidden>Skip, show more →</button>
   <section class="result" id="result" hidden></section>
   <button class="reset" id="resetBtn" type="button">Reset progress</button>
 </div>
@@ -201,13 +180,11 @@
 <dialog id="help">
   <h2>How to play</h2>
   <ol>
-    <li>Pick a mode: a message from the group chat, a famous movie line, or a famous quote. It's hidden. Tap or type letters to reveal it.</li>
-    <li>Each wrong letter costs a life. Run out and the message is revealed anyway. Shorter messages get more lives.</li>
-    <li>Know it already? Hit <b>Solve it</b> and type the whole thing. The more that's still hidden, the bigger the bonus. A wrong answer costs 2 lives.</li>
-    <li>Hit <b>I know who said it</b> whenever you're ready. You get 2 calls. A wrong call sends you back to the letters.</li>
-    <li>A right call doesn't end the game. You still finish the message.</li>
-    <li>You get two scores out of 50 that add up to 100. <b>Phrase</b> rewards solving with lives to spare. <b>Who</b> rewards calling it early and in fewer calls.</li>
-    <li>There's one new puzzle per mode each day. Finish all three for your daily total out of 300, then copy it to the chat.</li>
+    <li>Three rounds a day: <b>Jimseng</b> (the group chat), <b>Movies</b> and <b>Speeches</b>. One quote each.</li>
+    <li>The quote starts with just its first word or two. Guess who said it.</li>
+    <li>A wrong guess or a skip shows more of the quote. You get 6 turns, and the last one shows the whole thing (plus the film, in Movies).</li>
+    <li>The earlier you get it, the more you score: 100, 80, 60, 40, 25, then 10.</li>
+    <li>Finish all three for your daily total out of 300, then copy it to the chat.</li>
   </ol>
   <form method="dialog"><button class="pill">Got it</button></form>
 </dialog>
@@ -521,16 +498,13 @@ const SPEECHES = [
   ["Archimedes", "Give me a lever long enough and I shall move the world"],
 ].map(([from, text]) => ({ from, text }));
 
-const SENDER_TRIES = 2;
-const SOLVE_COST = 2; // lives lost for typing the wrong phrase
-const LAUNCH = new Date(2026, 8, 29); // puzzle #1 in every mode (months are 0-based)
-const CHOICES = 8; // movie/speech modes show the answer plus 7 decoys
+const LAUNCH = new Date(2026, 8, 29); // puzzle #1 in every round (months are 0-based)
+const TURNS = 6;
+const POINTS = [100, 80, 60, 40, 25, 10]; // score for getting it on turn 1, 2, ...
 const ADMIN_HASH = "b8dc2c143be8994682b08461f46487e05874e59dd9ab65cf973e3a3c67a763aa"; // sha256 of the admin code
-const KB_ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const isLetter = (ch) => /[a-z]/i.test(ch);
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
 function mulberry32(seed) {
@@ -617,11 +591,15 @@ function chibi(name) {
   </svg>`;
 }
 
-// key: bump when a bank changes, or old saves point at new puzzles. pinned: puzzles #1, #2, ... in that order.
+const lettersOf = (s) => s.toLowerCase().normalize("NFD").replace(/[^a-z]/g, "");
+
+// key: bump when a bank or the save shape changes, or old saves point at new puzzles. pinned: puzzles #1, #2, ... in that order.
+// pick: tap a name from the chat instead of typing one.
 const MODES = Object.fromEntries(Object.entries({
-  friends: { tab: "Jimseng", icon: "💬", bank: MESSAGES, key: "jimchatdle:v6", seed: 20260929, pinned: ["Travis wanted, you know, a secure concert before and after Astroworld Houston", "Has everyone got their secret Santa sorted?"], kicker: "someone in the chat said…", noun: "sender", by: "Sent by" },
-  movies: { tab: "Movies", icon: "🎬", bank: MOVIES, key: "jimchatdle:movies:v1", seed: 20260930, pinned: [], kicker: "a famous movie line…", noun: "actor", by: "Said by" },
-  speeches: { tab: "Speeches", icon: "🎤", bank: SPEECHES, key: "jimchatdle:speeches:v1", seed: 20260931, pinned: [], kicker: "someone famous once said…", noun: "speaker", by: "Said by" },
+  friends: { tab: "Jimseng", icon: "💬", bank: MESSAGES, key: "jimchatdle:v7", seed: 20260929, pick: true, kicker: "someone in the chat said…", ask: "Who said it?", by: "Sent by",
+    pinned: ["Travis wanted, you know, a secure concert before and after Astroworld Houston", "Has everyone got their secret Santa sorted?"] },
+  movies: { tab: "Movies", icon: "🎬", bank: MOVIES, key: "jimchatdle:movies:v2", seed: 20260930, pick: false, kicker: "a famous movie line…", ask: "Which actor said it?", by: "Said by", pinned: [] },
+  speeches: { tab: "Speeches", icon: "🎤", bank: SPEECHES, key: "jimchatdle:speeches:v2", seed: 20260931, pick: false, kicker: "someone famous once said…", ask: "Who said it?", by: "Said by", pinned: [] },
 }).map(([id, m]) => {
   const pinned = m.pinned.map((text) => m.bank.find((p) => p.text === text));
   const order = [...pinned, ...seededShuffle(m.bank.filter((p) => !pinned.includes(p)), m.seed)];
@@ -629,18 +607,9 @@ const MODES = Object.fromEntries(Object.entries({
 }));
 let modeId = MODES[location.hash.slice(1)] ? location.hash.slice(1) : "friends";
 const M = () => MODES[modeId];
-const cap = (s) => s[0].toUpperCase() + s.slice(1);
 
 const TODAY = dayNumber(new Date());
-const puzzleFor = (day, m = M()) => { const o = m.order; return o[((day % o.length) + o.length) % o.length]; };
-
-// Friends pick from the whole chat. Famous modes show the answer plus decoys, seeded so everyone sees the same list.
-function choicesFor(puzzle) {
-  const m = M();
-  if (m.id === "friends") return m.names;
-  const decoys = seededShuffle(m.names.filter((n) => n !== puzzle.from), m.bank.indexOf(puzzle) + 1).slice(0, CHOICES - 1);
-  return [...decoys, puzzle.from].sort();
-}
+const puzzleFor = (day, m = M()) => m.order[((day % m.order.length) + m.order.length) % m.order.length];
 
 // ---- storage (localStorage can throw in private mode; the game still works, it just forgets) ----
 function loadStore(m = M()) {
@@ -648,96 +617,58 @@ function loadStore(m = M()) {
 }
 function savedGame(store, day) {
   const g = store[day];
-  return g && Array.isArray(g.guessed) && Array.isArray(g.senderGuesses) ? g : null;
+  return g && Array.isArray(g.guesses) ? g : null;
 }
 function save() {
   if (game.practice) return;
   try {
-    const store = loadStore();
-    const { guessed, senderGuesses, calledHidden, solvedAt, badSolves } = game;
-    localStorage.setItem(M().key, JSON.stringify({ ...store, [game.day]: { guessed, senderGuesses, calledHidden, solvedAt, badSolves } }));
+    localStorage.setItem(M().key, JSON.stringify({ ...loadStore(), [game.day]: { guesses: game.guesses } }));
   } catch { /* not persisted: private mode or storage blocked */ }
 }
 
-// ---- game state ----
-const num = (v) => (typeof v === "number" ? v : null);
-// solvedAt: share of the message still hidden when it was typed in. badSolves: wrong typed answers.
-const practiceGame = (puzzle) => ({ day: null, practice: true, puzzle, guessed: [], senderGuesses: [], calledHidden: null, solvedAt: null, badSolves: 0 });
+// ---- game state: guesses holds one entry per turn, a name or null for a skip ----
+const practiceGame = (puzzle) => ({ day: null, practice: true, puzzle, guesses: [] });
 function startDaily() {
   const saved = savedGame(loadStore(), TODAY);
-  return {
-    day: TODAY, practice: false, puzzle: puzzleFor(TODAY),
-    guessed: saved?.guessed ?? [], senderGuesses: saved?.senderGuesses ?? [],
-    calledHidden: num(saved?.calledHidden), solvedAt: num(saved?.solvedAt), badSolves: num(saved?.badSolves) ?? 0,
-  };
+  return { day: TODAY, practice: false, puzzle: puzzleFor(TODAY), guesses: saved?.guesses ?? [] };
 }
 function startPractice() {
-  const pool = M().bank.filter((m) => m !== game.puzzle);
+  const pool = M().bank.filter((p) => p !== game.puzzle);
   return practiceGame(pool[Math.floor(Math.random() * pool.length)]);
 }
 
-// Letters only, so case, punctuation, spacing and accents never matter.
-const lettersOf = (s) => s.toLowerCase().normalize("NFD").replace(/[^a-z]/g, "");
-function editDistance(a, b) {
-  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
-  for (let i = 1; i <= a.length; i++) {
-    const row = [i];
-    for (let j = 1; j <= b.length; j++) row[j] = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
-    prev = row;
-  }
-  return prev[b.length];
-}
-// About one typo allowed per 12 letters, so "I'll be back" must be exact but long lines forgive a slip.
-function typedMatches(typed, text) {
-  const want = lettersOf(text);
-  return editDistance(lettersOf(typed), want) <= Math.floor(want.length / 12);
-}
-
-// Fewer distinct letters leaves more of the alphabet to miss with, so those messages get more lives.
-// ponytail: rough curve (8 distinct -> 8 lives, 16+ -> 4); retune once real messages are in
-const livesFor = (distinct) => Math.min(8, Math.max(4, Math.round(12 - distinct / 2)));
-
+// Words appear left to right: turn 1 shows about a sixth of the quote (at least one word), the last turn shows all of it.
 function progress(g) {
-  const chars = [...g.puzzle.text.toLowerCase()].filter(isLetter);
-  const letters = new Set(chars);
-  const lives = livesFor(letters.size);
-  const misses = g.guessed.filter((l) => !letters.has(l));
-  const solvedAt = g.solvedAt ?? null;
-  const solved = solvedAt !== null || [...letters].every((l) => g.guessed.includes(l));
-  const gotSender = g.senderGuesses.includes(g.puzzle.from);
-  const livesUsed = misses.length + SOLVE_COST * (g.badSolves ?? 0);
-  const lettersOver = solved || livesUsed >= lives;
-  const senderOver = gotSender || g.senderGuesses.length >= SENDER_TRIES;
-  const livesLeft = Math.max(0, lives - livesUsed);
-  const revealed = chars.filter((c) => g.guessed.includes(c)).length / chars.length;
-  // share of the message hidden right now (0 once it's over and fully shown)
-  const hiddenNow = lettersOver ? 0 : 1 - revealed;
-  // Phrase /50: solving is 15 + up to 15 for lives kept + up to 20 for typing it in while still hidden.
-  // Failing gets up to 15 for what you uncovered, so it never beats a solve.
-  const phraseScore = solved ? Math.round(15 + (15 * livesLeft) / lives + 20 * (solvedAt ?? 0))
-    : lettersOver ? Math.round(15 * revealed) : 0;
-  // Sender /50: 20 for the right name + up to 30 for how hidden the message was when called, halved by a wrong call.
-  const tryMultiplier = [1, 0.5][g.senderGuesses.length - 1] ?? 0;
-  const senderScore = gotSender ? Math.round((20 + 30 * (g.calledHidden ?? 0)) * tryMultiplier) : 0;
+  const words = g.puzzle.text.split(/\s+/);
+  const used = g.guesses.length;
+  const won = g.guesses.includes(g.puzzle.from);
+  const over = won || used >= TURNS;
   return {
-    letters, misses, solved, solvedAt, gotSender, senderOver, lives, livesLeft, hiddenNow,
-    phraseScore, senderScore, score: phraseScore + senderScore,
-    triesLeft: SENDER_TRIES - g.senderGuesses.length,
-    phase: !lettersOver ? "letters" : senderOver ? "done" : "sender",
+    words, used, won, over,
+    shown: over ? words.length : Math.ceil((words.length * (used + 1)) / TURNS),
+    lastTurn: !over && used === TURNS - 1,
+    turnsLeft: TURNS - used,
+    score: won ? POINTS[used - 1] : 0,
   };
+}
+
+// Full name, or a surname only one person in the bank has ("hanks" -> Tom Hanks).
+function findName(typed) {
+  const t = lettersOf(typed);
+  if (!t) return null;
+  const exact = M().names.find((n) => lettersOf(n) === t);
+  if (exact) return exact;
+  const bySurname = M().names.filter((n) => lettersOf(n.split(" ").at(-1)) === t);
+  return bySurname.length === 1 ? bySurname[0] : null;
 }
 
 let game = startDaily();
 let note = "";
-let freshLetter = null;
-let calling = false; // player hit "Call it" and is picking a name mid-letters
-let solving = false; // player hit "Solve it" and is typing the phrase
+let fresh = null; // first word index revealed by the last turn, for the pop-in
 let isAdmin = false; // ponytail: in-memory only, re-enter the code after a reload
 
 function load(g) {
   game = g;
-  calling = false;
-  solving = false;
   note = "";
   buildNames();
   render();
@@ -749,78 +680,28 @@ function setMode(id) {
   load(startDaily());
 }
 
-const pickingName = (p) => !p.senderOver && (p.phase === "sender" || (p.phase === "letters" && calling));
-
-function setCalling(on) {
-  calling = on;
-  solving = false;
-  note = "";
-  render();
-}
-
-function setSolving(on) {
-  solving = on;
-  calling = false;
-  note = "";
-  render();
-  if (on) $("solveInput").focus();
-}
-
-function submitSolve(typed) {
+function guess(name) {
   const before = progress(game);
-  if (before.phase !== "letters" || !solving || !lettersOf(typed)) return;
-  const right = typedMatches(typed, game.puzzle.text);
-  game = right ? { ...game, solvedAt: before.hiddenNow } : { ...game, badSolves: (game.badSolves ?? 0) + 1 };
-  solving = false;
+  if (before.over || (name && game.guesses.includes(name))) return;
+  game = { ...game, guesses: [...game.guesses, name] };
   const p = progress(game);
-  if (right) note = p.phase === "sender" ? `Nailed it at ${Math.round(before.hiddenNow * 100)}% hidden!` : "";
-  else if (p.phase === "letters") note = `Not quite. That cost ${SOLVE_COST} lives, ${plural(p.livesLeft, "life", "lives")} left.`;
-  else note = "";
-  if (!right) shake();
+  fresh = before.shown;
+  const more = p.lastTurn ? "Last turn, here's the whole thing." : "Here's a bit more.";
+  note = p.over ? "" : name ? `Not ${name}. ${more}` : more;
+  if (name && !p.won) shake();
   save();
   render();
 }
 
-function guessLetter(l) {
-  if (progress(game).phase !== "letters" || calling || solving || game.guessed.includes(l)) return;
-  game = { ...game, guessed: [...game.guessed, l] };
-  const p = progress(game);
-  const hits = [...game.puzzle.text.toLowerCase()].filter((c) => c === l).length;
-  const L = l.toUpperCase();
-  freshLetter = hits ? l : null;
-  if (p.phase !== "letters") note = "";
-  else note = hits ? `Yep, ${hits === 1 ? `one ${L}` : `${hits} ${L}'s`}.` : `No ${L}. ${plural(p.livesLeft, "life", "lives")} left.`;
-  if (!hits) shake();
-  save();
-  render();
-}
-
-function guessSender(name) {
-  const before = progress(game);
-  if (!pickingName(before) || game.senderGuesses.includes(name)) return;
-  const right = name === game.puzzle.from;
-  game = { ...game, senderGuesses: [...game.senderGuesses, name], calledHidden: right ? before.hiddenNow : game.calledHidden };
-  calling = false;
-  const p = progress(game);
-  const stillLetters = p.phase === "letters";
-  if (right) note = stillLetters ? `Yes, it was ${name}! Now finish the message.` : "";
-  else if (p.senderOver) note = stillLetters ? `Not ${name}. Out of calls, finish the message for points.` : "";
-  else note = `Not ${name}. ${plural(p.triesLeft, "call", "calls")} left${stillLetters ? ", keep guessing letters" : ""}.`;
-  save();
-  render();
-}
-
-// One line per round, e.g. "🎬 Movies 71/100 ❤️❤️🖤 🟥🟩 · typed at 89%"
-function shareLine({ m, g, p }) {
-  const hearts = "❤️".repeat(p.livesLeft) + "🖤".repeat(p.lives - p.livesLeft);
-  const who = g.senderGuesses.map((n) => (n === g.puzzle.from ? "🟩" : "🟥")).join("");
-  const typed = p.solvedAt > 0 ? ` · typed at ${Math.round(p.solvedAt * 100)}%` : "";
-  return `${m.icon} ${m.tab} ${p.score}/100 ${hearts} ${who}${typed}`;
-}
+// ---- sharing: one line per round, all three together once the day is done ----
+const squares = (g) => Array.from({ length: TURNS }, (_, i) => {
+  const x = g.guesses[i];
+  return i >= g.guesses.length ? "⬜" : x === g.puzzle.from ? "🟩" : x ? "🟥" : "⬛";
+}).join("");
+const shareLine = ({ m, g, p }) => `${m.icon} ${m.tab} ${p.score}/100 ${squares(g)}`;
 function shareText(rounds) {
   const total = rounds.reduce((sum, r) => sum + r.p.score, 0);
-  const title = `Jimchatdle ${game.practice ? "practice" : `#${TODAY + 1}`} · ${total}/${rounds.length * 100}`;
-  return [title, ...rounds.map(shareLine)].join("\n");
+  return [`Jimchatdle ${game.practice ? "practice" : `#${TODAY + 1}`} · ${total}/${rounds.length * 100}`, ...rounds.map(shareLine)].join("\n");
 }
 
 // Today's daily round in every mode; p is null until that round is finished.
@@ -829,7 +710,7 @@ function todayRounds() {
     const saved = savedGame(loadStore(m), TODAY);
     const g = saved && { ...saved, puzzle: puzzleFor(TODAY, m) };
     const p = g && progress(g);
-    return { m, g, p: p?.phase === "done" ? p : null };
+    return { m, g, p: p?.over ? p : null };
   });
 }
 
@@ -839,20 +720,22 @@ function stats() {
   for (const day of Object.keys(store)) {
     const g = savedGame(store, day);
     const p = g && progress({ ...g, puzzle: puzzleFor(Number(day)) });
-    if (p?.phase === "done") { played++; total += p.score; }
+    if (p?.over) { played++; total += p.score; }
   }
   // ponytail: walks back day by day; fine for years of play
   for (let d = TODAY; d > TODAY - 3650; d--) {
     const g = savedGame(store, d);
     const p = g && progress({ ...g, puzzle: puzzleFor(d) });
-    if (p?.phase === "done" && p.gotSender) streak++;
-    else if (d === TODAY && p?.phase !== "done") continue; // today still in progress
+    if (p?.won) streak++;
+    else if (d === TODAY && !p?.over) continue; // today still in progress
     else break;
   }
   return { played, streak, average: played ? Math.round(total / played) : 0 };
 }
 
 // ---- rendering ----
+const puzzleLabel = () => (game.practice ? "Practice" : `No. ${String(game.day + 1).padStart(3, "0")}`);
+
 function render() {
   const p = progress(game);
   $("puzzleTag").textContent = puzzleLabel();
@@ -864,106 +747,60 @@ function render() {
   }
   renderBubble(p);
   renderSender(p);
-  renderLives(p);
-  renderKeyboard(p);
-  renderNames(p);
+  renderTurns(p);
+  renderGuessing(p);
   renderResult(p);
-  const picking = calling || solving;
-  $("callBtn").hidden = !(p.phase === "letters" && !p.senderOver && !picking);
-  $("solveBtn").hidden = !(p.phase === "letters" && !picking);
-  $("solveForm").hidden = !(p.phase === "letters" && solving);
-  $("backBtn").hidden = !(p.phase === "letters" && picking);
-  $("status").textContent = note || defaultNote(p);
-  freshLetter = null;
-}
-
-const puzzleLabel = () => (game.practice ? "Practice" : `No. ${String(game.day + 1).padStart(3, "0")}`);
-
-function defaultNote(p) {
-  if (p.phase === "letters" && solving) return `Type the whole message. Wrong costs ${SOLVE_COST} lives (${p.livesLeft} left).`;
-  if (p.phase === "letters" && calling) return `Who said it? (${plural(p.triesLeft, "call", "calls")} left)`;
-  if (p.phase === "letters" && p.gotSender) return "Sender locked in. Now finish the message.";
-  if (p.phase === "letters" && p.senderOver) return "Out of calls. Finish the message for points.";
-  if (p.phase === "letters") return `Solve the message. Call the ${M().noun} early for bonus points.`;
-  if (p.phase === "sender") {
-    const lead = p.solved ? "Cracked it." : "Out of lives, so here's the message.";
-    return `${lead} Who sent it? (${plural(p.triesLeft, "call", "calls")} left)`;
-  }
-  return "";
+  $("status").textContent = note || (p.over ? "" : p.used === 0 ? `${M().ask} Guess now, or skip to see more.` : `${plural(p.turnsLeft, "turn", "turns")} left.`);
+  fresh = null;
 }
 
 function renderBubble(p) {
-  const revealAll = p.phase !== "letters";
-  const words = game.puzzle.text.split(/\s+/).map((word) => {
+  $("bubble").replaceChildren(...p.words.map((word, i) => {
     const w = document.createElement("span");
-    w.className = "word";
-    for (const ch of word) {
-      const s = document.createElement("span");
-      if (!isLetter(ch)) {
-        s.className = "slot fixed";
-        s.textContent = ch;
-      } else {
-        const l = ch.toLowerCase();
-        const known = game.guessed.includes(l);
-        s.className = "slot" + (known || p.solved ? " shown" : revealAll ? " missed" : "") + (known && l === freshLetter ? " pop" : "");
-        s.textContent = known || revealAll ? ch : "";
-      }
-      w.append(s);
+    if (i < p.shown) {
+      w.className = "word" + (fresh !== null && i >= fresh ? " pop" : "");
+      w.textContent = word;
+    } else {
+      w.className = "gap";
+      w.style.width = `${Math.max(1, lettersOf(word).length) * 0.55}em`;
     }
     return w;
-  });
-  $("bubble").replaceChildren(...words);
-  $("srMsg").textContent = "Message: " + [...game.puzzle.text]
-    .map((ch) => (isLetter(ch) && !revealAll && !game.guessed.includes(ch.toLowerCase()) ? "_" : ch)).join("");
+  }));
+  $("srMsg").textContent = `Quote so far: ${p.words.slice(0, p.shown).join(" ")}${p.shown < p.words.length ? " …" : ""}`;
+  const src = game.puzzle.src;
+  $("src").hidden = !src || !(p.over || p.lastTurn);
+  $("src").textContent = src ? `from ${src}` : "";
 }
 
 function renderSender(p) {
-  const known = p.phase === "done" || p.gotSender;
   const who = game.puzzle.from;
   const av = $("avatar");
-  av.innerHTML = known ? chibi(who) ?? esc(who[0]) : "?";
-  av.classList.toggle("known", known);
-  const src = game.puzzle.src ? `, ${game.puzzle.src}` : "";
-  $("senderName").textContent = `— ${known ? who + src : "???"}`;
+  av.innerHTML = p.over ? chibi(who) ?? esc(who[0]) : "?";
+  av.classList.toggle("known", p.over);
+  $("senderName").textContent = `— ${p.over ? who : "???"}`;
 }
 
-function renderLives(p) {
-  const dots = Array.from({ length: p.lives }, (_, i) => {
+function renderTurns(p) {
+  $("turns").replaceChildren(...Array.from({ length: TURNS }, (_, i) => {
     const s = document.createElement("span");
-    s.className = "life" + (i >= p.livesLeft ? " lost" : "");
-    s.textContent = "♥";
+    const x = game.guesses[i];
+    s.className = "turn " + (i < p.used ? (x === game.puzzle.from ? "hit" : x ? "miss" : "pass") : i === p.used && !p.over ? "now" : "");
     return s;
-  });
-  $("lives").replaceChildren(...dots);
-  $("lives").setAttribute("aria-label", `${p.livesLeft} of ${p.lives} lives left`);
-}
-
-function buildKeyboard() {
-  $("keyboard").replaceChildren(...KB_ROWS.map((row) => {
-    const r = document.createElement("div");
-    r.className = "kb-row";
-    r.append(...[...row].map((l) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "key";
-      b.dataset.key = l;
-      b.textContent = l;
-      b.setAttribute("aria-label", l.toUpperCase());
-      b.addEventListener("click", () => guessLetter(l));
-      return b;
-    }));
-    return r;
   }));
+  $("turns").setAttribute("aria-label", p.over ? `Used ${p.used} of ${TURNS} turns` : `Turn ${p.used + 1} of ${TURNS}`);
 }
 
-function renderKeyboard(p) {
-  $("keyboard").hidden = p.phase !== "letters" || calling || solving;
-  for (const b of document.querySelectorAll(".key")) {
-    const l = b.dataset.key;
-    const used = game.guessed.includes(l);
-    b.classList.toggle("hit", used && p.letters.has(l));
-    b.classList.toggle("miss", used && !p.letters.has(l));
-    b.disabled = used;
+function renderGuessing(p) {
+  const pick = M().pick;
+  $("names").hidden = p.over || !pick;
+  $("guessForm").hidden = p.over || pick;
+  $("skipBtn").hidden = p.over;
+  $("skipBtn").textContent = p.lastTurn ? "Give up" : "Skip, show more →";
+  $("guessInput").placeholder = M().ask;
+  for (const b of $("names").children) {
+    const tried = game.guesses.includes(b.dataset.name);
+    b.classList.toggle("wrong", tried);
+    b.disabled = tried;
   }
 }
 
@@ -982,8 +819,11 @@ function buildModes() {
   }));
 }
 
+// Jimseng taps a face from the chat; the famous rounds type a name with the whole bank as suggestions.
 function buildNames() {
-  $("names").replaceChildren(...choicesFor(game.puzzle).map((name) => {
+  const m = M();
+  $("nameList").replaceChildren(...(m.pick ? [] : m.names.map((n) => new Option(n))));
+  $("names").replaceChildren(...(m.pick ? m.names : []).map((name) => {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "name";
@@ -992,32 +832,22 @@ function buildNames() {
     dot.className = "dot";
     dot.innerHTML = chibi(name) ?? esc(name[0]);
     b.append(dot, name);
-    b.addEventListener("click", () => guessSender(name));
+    b.addEventListener("click", () => guess(name));
     return b;
   }));
 }
 
-function renderNames(p) {
-  $("names").hidden = !pickingName(p);
-  for (const b of $("names").children) {
-    const tried = game.senderGuesses.includes(b.dataset.name);
-    b.classList.toggle("wrong", tried);
-    b.disabled = tried;
-  }
-}
-
 function renderResult(p) {
   const el = $("result");
-  el.hidden = p.phase !== "done";
+  el.hidden = !p.over;
   if (el.hidden) return;
   const s = game.practice ? null : stats();
   const from = game.puzzle.from;
-  const headline = p.score >= 80 ? "Psychic." : p.score >= 55 ? "Called it." : p.score > 0 ? "Scraped it." : "Unlucky.";
-  const phraseDetail = !p.solved ? "Ran out of lives"
-    : `${p.solvedAt > 0 ? `Typed it at ${Math.round(p.solvedAt * 100)}% hidden` : "Solved"}, ${plural(p.lives - p.livesLeft, "life", "lives")} lost`;
-  const senderDetail = !p.gotSender ? "Got away"
-    : `${game.calledHidden > 0 ? `Called at ${Math.round(game.calledHidden * 100)}% hidden` : "Named at the end"}, ${plural(game.senderGuesses.length, "call", "calls")}`;
-  // Practice shares on its own; the daily share waits until all three modes are done.
+  const headline = !p.won ? "Got away." : p.used === 1 ? "Psychic." : p.used <= 3 ? "Called it." : "Scraped it.";
+  const detail = p.won ? `Got it on turn ${p.used} of ${TURNS}` : `Not in ${TURNS} turns`;
+  const tried = game.guesses.filter(Boolean)
+    .map((n) => `<span class="${n === from ? "" : "no-match"}">${esc(n)}</span>`).join("");
+  // Practice shares on its own; the daily share waits until all three rounds are done.
   const rounds = game.practice ? [{ m: M(), g: game, p }] : todayRounds();
   const left = rounds.filter((r) => !r.p);
   const text = left.length ? "" : shareText(rounds);
@@ -1028,22 +858,18 @@ function renderResult(p) {
     ${game.practice ? "" : `<div><p class="label">Today's total</p><h2 class="landed">${rounds.reduce((sum, r) => sum + r.p.score, 0)}<small>/300</small></h2></div>`}
     <pre class="share-preview" id="sharePreview">${esc(text)}</pre>
     <div class="actions"><button class="pill solid" id="shareBtn" type="button">${game.practice ? "Copy result" : "Copy all three"} →</button>${practiceBtn}</div>`;
-  const guesses = game.senderGuesses
-    .map((n) => `<span class="${n === from ? "" : "no-match"}">${esc(n)}</span>`).join("");
   el.innerHTML = `
-    <div class="card-top"><span class="no">${puzzleLabel()}</span><span class="brand">Jimchatdle</span></div>
-    <div class="box dim"><p class="label">You called</p><p class="guesses">${guesses}</p></div>
+    <div class="card-top"><span class="no">${puzzleLabel()} · ${esc(M().tab)}</span><span class="brand">Jimchatdle</span></div>
+    ${tried ? `<div class="box dim"><p class="label">You guessed</p><p class="guesses">${tried}</p></div>` : ""}
     <div class="box answer">
       <p class="label">${M().by}</p>
       <div class="who"><span class="avatar">${chibi(from) ?? esc(from[0])}</span>${esc(from)}</div>
+      ${game.puzzle.src ? `<p class="detail">${esc(game.puzzle.src)}</p>` : ""}
     </div>
     <div>
       <p class="label">You scored</p>
       <h2 class="landed">${p.score}<small>/100</small> ${headline}</h2>
-    </div>
-    <div class="breakdown">
-      <div class="box dim"><p class="label">Phrase</p><p class="part">${p.phraseScore}<small>/50</small></p><p class="detail">${phraseDetail}</p></div>
-      <div class="box dim"><p class="label">${cap(M().noun)}</p><p class="part">${p.senderScore}<small>/50</small></p><p class="detail">${senderDetail}</p></div>
+      <p class="detail">${detail} ${squares(game)}</p>
     </div>
     ${s ? `<dl class="stats">
       <div><dt>Played</dt><dd>${s.played}</dd></div>
@@ -1053,7 +879,7 @@ function renderResult(p) {
     ${shareHtml}
     ${game.practice
       ? `<button class="pill dashed" id="todayBtn" type="button">Back to today's</button>`
-      : `<p class="next">Next message in <span id="countdown">--:--:--</span></p>`}
+      : `<p class="next">Next quotes in <span id="countdown">--:--:--</span></p>`}
   `;
   $("shareBtn")?.addEventListener("click", () => copyShare(text));
   $("nextRoundBtn")?.addEventListener("click", () => setMode(left[0].m.id));
@@ -1091,28 +917,25 @@ function shake() {
 }
 
 // ---- boot ----
-document.addEventListener("keydown", (e) => {
-  if (e.ctrlKey || e.metaKey || e.altKey || document.querySelector("dialog[open]")) return;
-  if (e.key === "Escape" && (calling || solving)) setCalling(false);
-  else if (e.target.closest("input, select")) return;
-  else if (/^[a-z]$/i.test(e.key)) guessLetter(e.key.toLowerCase());
-});
 $("helpBtn").addEventListener("click", () => $("help").showModal());
-$("callBtn").addEventListener("click", () => setCalling(true));
-$("backBtn").addEventListener("click", () => setCalling(false));
-$("solveBtn").addEventListener("click", () => setSolving(true));
-$("solveForm").addEventListener("submit", (e) => {
+$("skipBtn").addEventListener("click", () => guess(null));
+$("guessForm").addEventListener("submit", (e) => {
   e.preventDefault();
-  submitSolve($("solveInput").value);
-  $("solveInput").value = "";
+  const typed = $("guessInput").value.trim();
+  if (!typed) return;
+  const name = findName(typed);
+  if (!name) note = `"${typed}" isn't one of the options. Pick a name from the suggestions.`;
+  else if (game.guesses.includes(name)) note = `Already tried ${name}.`;
+  else { $("guessInput").value = ""; guess(name); return; }
+  render();
 });
 $("resetBtn").addEventListener("click", () => {
-  if (!confirm(`Wipe today's ${M().tab} game and all your ${M().tab} stats?`)) return;
+  if (!confirm(`Wipe today's ${M().tab} round and all your ${M().tab} stats?`)) return;
   try { localStorage.removeItem(M().key); } catch { /* nothing was saved anyway */ }
   load(startDaily());
 });
 
-// ---- admin: code unlocks playing any puzzle in the current mode ----
+// ---- admin: code unlocks playing any puzzle in the current round ----
 async function sha256(text) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -1143,7 +966,6 @@ $("adminPlay").addEventListener("click", () => {
 });
 setInterval(tickCountdown, 1000);
 
-buildKeyboard();
 buildModes();
 load(game);
 </script>
