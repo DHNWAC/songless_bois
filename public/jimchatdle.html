@@ -71,8 +71,16 @@
   .landed small { font-size: 1.1rem; opacity: .8; margin-right: 6px; }
   .reset { align-self: center; border: 0; background: none; color: var(--ink-soft); font-size: .7rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 3px; opacity: .7; }
   .reset:hover { opacity: 1; }
-  .home { align-self: flex-start; color: var(--ink-soft); font-size: .85rem; font-weight: 700; text-decoration: none; }
+  .top { display: flex; justify-content: space-between; align-items: center; }
+  .home { color: var(--ink-soft); font-size: .85rem; font-weight: 700; text-decoration: none; }
   .home:hover { color: var(--ink); }
+  .gear { border: 0; background: none; color: var(--ink-soft); font-size: 1.15rem; opacity: .55; }
+  .gear:hover { opacity: 1; }
+  .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .mode { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; border: 0; border-radius: 16px; background: #fff; font-size: .72rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; box-shadow: 0 2px 0 var(--rule); transition: transform .1s, box-shadow .1s; }
+  .mode span { font-size: 1.3rem; letter-spacing: 0; }
+  .mode:hover:not([aria-pressed="true"]) { transform: translateY(-1px); box-shadow: 0 0 0 2px var(--tomato); }
+  .mode[aria-pressed="true"] { background: var(--ink); color: #fff; box-shadow: 0 10px 22px -12px rgba(30, 31, 36, .7); }
   .breakdown { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .part { font-size: 1.6rem; font-weight: 900; margin-top: 2px; }
   .part small { font-size: .9rem; opacity: .75; }
@@ -134,6 +142,9 @@
   dialog ol { margin-top: 18px; padding-left: 1.2em; display: grid; gap: 10px; line-height: 1.45; font-weight: 600; color: var(--ink-soft); }
   dialog ol ::marker { font-weight: 900; color: var(--tomato); }
   dialog .pill { width: 100%; margin-top: 20px; border: 0; background: var(--tomato); color: #fff; }
+  dialog .pill.ghost { margin-top: 10px; border: 2px dashed var(--rule); background: none; color: var(--ink-soft); }
+  dialog input, dialog select { width: 100%; margin-top: 18px; padding: 12px 14px; border: 2px solid var(--rule); border-radius: 14px; background: #fff; color: var(--ink); font: 700 1rem var(--font); }
+  .err { margin-top: 8px; color: var(--tomato); font-weight: 800; }
 
   @keyframes pop { from { transform: translateY(4px) scale(.4); opacity: 0; } to { transform: none; opacity: 1; } }
   @keyframes shake { 25% { transform: translateX(-6px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-3px); } }
@@ -143,14 +154,18 @@
 </head>
 <body>
 <div class="app">
-  <a class="home" href="/">← Back</a>
+  <nav class="top">
+    <a class="home" href="/">← Back</a>
+    <button class="gear" id="adminBtn" type="button" aria-label="Admin">⚙</button>
+  </nav>
+  <div class="modes" id="modes" role="group" aria-label="Game mode"></div>
   <article class="card" aria-label="The mystery message">
     <header class="card-top">
       <span class="brand">Jimchatdle</span>
       <span class="no" id="puzzleTag"></span>
       <button class="help" id="helpBtn" type="button" aria-label="How to play">?</button>
     </header>
-    <p class="kicker">someone in the chat said…</p>
+    <p class="kicker" id="kicker"></p>
     <div class="message" id="bubble" aria-hidden="true"></div>
     <p class="sr-only" id="srMsg"></p>
     <footer class="card-foot">
@@ -171,14 +186,28 @@
 <dialog id="help">
   <h2>How to play</h2>
   <ol>
-    <li>A real message from the group chat is hidden. Tap or type letters to reveal it.</li>
+    <li>Pick a mode: a message from the group chat, a famous movie line, or a famous quote. It's hidden. Tap or type letters to reveal it.</li>
     <li>Each wrong letter costs a life. Run out and the message is revealed anyway. Shorter messages get more lives.</li>
     <li>Hit <b>I know who said it</b> whenever you're ready. You get 3 calls. A wrong call sends you back to the letters.</li>
     <li>A right call doesn't end the game. You still finish the message.</li>
-    <li>You get two scores out of 50 that add up to 100. <b>Phrase</b> rewards solving with lives to spare. <b>Sender</b> rewards calling it early and in fewer calls.</li>
-    <li>There's one new message each day. Copy your result and brag in the chat.</li>
+    <li>You get two scores out of 50 that add up to 100. <b>Phrase</b> rewards solving with lives to spare. <b>Who</b> rewards calling it early and in fewer calls.</li>
+    <li>There's one new puzzle per mode each day. Copy your result and brag in the chat.</li>
   </ol>
   <form method="dialog"><button class="pill">Got it</button></form>
+</dialog>
+
+<dialog id="admin">
+  <h2>Admin</h2>
+  <form id="adminLock">
+    <input id="adminCode" type="password" inputmode="numeric" autocomplete="off" maxlength="8" aria-label="Admin code" placeholder="Code">
+    <p class="err" id="adminErr" hidden>Wrong code</p>
+    <button class="pill">Unlock</button>
+  </form>
+  <div id="adminTools" hidden>
+    <select id="adminPick" aria-label="Puzzle to play"></select>
+    <button class="pill" id="adminPlay" type="button">Play it</button>
+  </div>
+  <form method="dialog"><button class="pill ghost">Close</button></form>
 </dialog>
 
 <script>
@@ -367,11 +396,118 @@ const MESSAGES = Object.entries({
   ],
 }).flatMap(([from, texts]) => texts.map((text) => ({ from, text })));
 
+// [actor, line, film]
+const MOVIES = [
+  ["Humphrey Bogart", "Here's looking at you, kid", "Casablanca"],
+  ["Clark Gable", "Frankly, my dear, I don't give a damn", "Gone with the Wind"],
+  ["Marlon Brando", "I'm gonna make him an offer he can't refuse", "The Godfather"],
+  ["Robert De Niro", "You talkin' to me?", "Taxi Driver"],
+  ["Arnold Schwarzenegger", "I'll be back", "The Terminator"],
+  ["Jack Nicholson", "You can't handle the truth!", "A Few Good Men"],
+  ["Tom Hanks", "Houston, we have a problem", "Apollo 13"],
+  ["Heath Ledger", "Why so serious?", "The Dark Knight"],
+  ["Haley Joel Osment", "I see dead people", "The Sixth Sense"],
+  ["Roy Scheider", "You're gonna need a bigger boat", "Jaws"],
+  ["Leonardo DiCaprio", "I'm the king of the world!", "Titanic"],
+  ["Al Pacino", "Say hello to my little friend!", "Scarface"],
+  ["Judy Garland", "Toto, I've a feeling we're not in Kansas anymore", "The Wizard of Oz"],
+  ["Renée Zellweger", "You had me at hello", "Jerry Maguire"],
+  ["Patrick Swayze", "Nobody puts Baby in a corner", "Dirty Dancing"],
+  ["Clint Eastwood", "Go ahead, make my day", "Sudden Impact"],
+  ["Tim Allen", "To infinity and beyond!", "Toy Story"],
+  ["Ellen DeGeneres", "Just keep swimming", "Finding Nemo"],
+  ["Robin Williams", "Carpe diem. Seize the day, boys", "Dead Poets Society"],
+  ["Pat Morita", "Wax on, wax off", "The Karate Kid"],
+  ["Mandy Patinkin", "Hello. My name is Inigo Montoya. You killed my father. Prepare to die", "The Princess Bride"],
+  ["Mel Gibson", "They may take our lives, but they'll never take our freedom!", "Braveheart"],
+  ["Russell Crowe", "Are you not entertained?", "Gladiator"],
+  ["Daniel Day-Lewis", "I drink your milkshake!", "There Will Be Blood"],
+  ["Brad Pitt", "The first rule of Fight Club is you do not talk about Fight Club", "Fight Club"],
+  ["Matthew Broderick", "Life moves pretty fast. If you don't stop and look around once in a while, you could miss it", "Ferris Bueller's Day Off"],
+  ["Christopher Lloyd", "Roads? Where we're going, we don't need roads", "Back to the Future"],
+  ["Julia Roberts", "I'm also just a girl, standing in front of a boy, asking him to love her", "Notting Hill"],
+  ["Ian McKellen", "You shall not pass!", "The Lord of the Rings"],
+  ["Vin Diesel", "I am Groot", "Guardians of the Galaxy"],
+  ["Robert Downey Jr.", "I am Iron Man", "Iron Man"],
+  ["Liam Neeson", "What I do have are a very particular set of skills", "Taken"],
+  ["Samuel L. Jackson", "Say what again. I dare you, I double dare you", "Pulp Fiction"],
+  ["Jeff Goldblum", "Life, uh, finds a way", "Jurassic Park"],
+  ["Jennifer Lawrence", "I volunteer as tribute!", "The Hunger Games"],
+  ["Mike Myers", "Oh, behave!", "Austin Powers"],
+  ["Anthony Hopkins", "A census taker once tried to test me. I ate his liver with some fava beans and a nice chianti", "The Silence of the Lambs"],
+  ["Jeff Bridges", "Yeah, well, you know, that's just, like, your opinion, man", "The Big Lebowski"],
+  ["Leslie Nielsen", "I am serious, and don't call me Shirley", "Airplane!"],
+  ["Frank Oz", "Do. Or do not. There is no try", "The Empire Strikes Back"],
+  ["Rachel McAdams", "Stop trying to make fetch happen", "Mean Girls"],
+  ["Alicia Silverstone", "As if!", "Clueless"],
+  ["Viola Davis", "You is kind. You is smart. You is important", "The Help"],
+  ["Joe Pesci", "Funny how? Funny like a clown? I amuse you?", "Goodfellas"],
+  ["Laurence Fishburne", "Welcome to the real world", "The Matrix"],
+  ["Robbie Coltrane", "Yer a wizard, Harry", "Harry Potter and the Philosopher's Stone"],
+  ["Johnny Depp", "But why is the rum gone?", "Pirates of the Caribbean"],
+  ["Kate Winslet", "I'll never let go, Jack", "Titanic"],
+  ["Emma Watson", "It's Leviosa, not Leviosaa", "Harry Potter and the Philosopher's Stone"],
+  ["Harrison Ford", "Great, kid. Don't get cocky", "Star Wars"],
+].map(([from, text, src]) => ({ from, text, src }));
+
+// [who, words]
+const SPEECHES = [
+  ["Martin Luther King Jr.", "I have a dream that one day this nation will rise up"],
+  ["John F. Kennedy", "Ask not what your country can do for you, ask what you can do for your country"],
+  ["Franklin D. Roosevelt", "The only thing we have to fear is fear itself"],
+  ["Winston Churchill", "We shall fight on the beaches"],
+  ["Neil Armstrong", "That's one small step for man, one giant leap for mankind"],
+  ["Ronald Reagan", "Mr. Gorbachev, tear down this wall!"],
+  ["Abraham Lincoln", "Four score and seven years ago our fathers brought forth on this continent a new nation"],
+  ["Barack Obama", "Yes we can"],
+  ["Patrick Henry", "Give me liberty, or give me death!"],
+  ["Margaret Thatcher", "You turn if you want to. The lady's not for turning"],
+  ["Nelson Mandela", "It is an ideal for which I am prepared to die"],
+  ["Steve Jobs", "Stay hungry, stay foolish"],
+  ["Muhammad Ali", "Float like a butterfly, sting like a bee"],
+  ["Julius Caesar", "I came, I saw, I conquered"],
+  ["Harry Truman", "The buck stops here"],
+  ["George H. W. Bush", "Read my lips: no new taxes"],
+  ["Theodore Roosevelt", "Speak softly and carry a big stick"],
+  ["René Descartes", "I think, therefore I am"],
+  ["Socrates", "The unexamined life is not worth living"],
+  ["Albert Einstein", "Imagination is more important than knowledge"],
+  ["Isaac Newton", "If I have seen further it is by standing on the shoulders of giants"],
+  ["Francis Bacon", "Knowledge is power"],
+  ["J. R. R. Tolkien", "Not all those who wander are lost"],
+  ["William Shakespeare", "To be, or not to be, that is the question"],
+  ["Charles Dickens", "It was the best of times, it was the worst of times"],
+  ["Michelle Obama", "When they go low, we go high"],
+  ["Karl Marx", "Workers of the world, unite!"],
+  ["Lord Acton", "Power tends to corrupt, and absolute power corrupts absolutely"],
+  ["Mahatma Gandhi", "Strength does not come from physical capacity. It comes from an indomitable will"],
+  ["Thomas Edison", "Genius is one percent inspiration and ninety-nine percent perspiration"],
+  ["Benjamin Franklin", "In this world nothing can be said to be certain, except death and taxes"],
+  ["John Lennon", "Life is what happens to you while you're busy making other plans"],
+  ["Dylan Thomas", "Do not go gentle into that good night"],
+  ["Marshall McLuhan", "The medium is the message"],
+  ["Andy Warhol", "In the future, everyone will be world-famous for fifteen minutes"],
+  ["Friedrich Nietzsche", "God is dead"],
+  ["Oscar Wilde", "I can resist everything except temptation"],
+  ["Jean-Paul Sartre", "Hell is other people"],
+  ["Jean-Jacques Rousseau", "Man is born free, and everywhere he is in chains"],
+  ["Lao Tzu", "A journey of a thousand miles begins with a single step"],
+  ["Richard Nixon", "I'm not a crook"],
+  ["Neville Chamberlain", "Peace for our time"],
+  ["Wayne Gretzky", "You miss one hundred percent of the shots you don't take"],
+  ["Yogi Berra", "It ain't over till it's over"],
+  ["Mark Zuckerberg", "Move fast and break things"],
+  ["Mark Twain", "The reports of my death are greatly exaggerated"],
+  ["Eleanor Roosevelt", "No one can make you feel inferior without your consent"],
+  ["Charlotte Brontë", "I am no bird; and no net ensnares me"],
+  ["Simone de Beauvoir", "One is not born, but rather becomes, a woman"],
+  ["Archimedes", "Give me a lever long enough and I shall move the world"],
+].map(([from, text]) => ({ from, text }));
+
 const SENDER_TRIES = 3;
-const LAUNCH = new Date(2026, 8, 29); // puzzle #1 (months are 0-based)
-const STORE_KEY = "jimchatdle:v5"; // bump when MESSAGES changes, or old saves point at new puzzles
-// Puzzles #1, #2, ... in this order; everything else is shuffled after them.
-const PINNED = ["Has everyone got their secret Santa sorted?"];
+const LAUNCH = new Date(2026, 8, 29); // puzzle #1 in every mode (months are 0-based)
+const CHOICES = 8; // movie/speech modes show the answer plus 7 decoys
+const ADMIN_HASH = "b8dc2c143be8994682b08461f46487e05874e59dd9ab65cf973e3a3c67a763aa"; // sha256 of the admin code
 const KB_ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
 
 const $ = (id) => document.getElementById(id);
@@ -463,15 +599,34 @@ function chibi(name) {
   </svg>`;
 }
 
-const FRIENDS = [...new Set(MESSAGES.map((m) => m.from))].sort();
-const pinned = PINNED.map((text) => MESSAGES.find((m) => m.text === text));
-const ORDER = [...pinned, ...seededShuffle(MESSAGES.filter((m) => !pinned.includes(m)), 20260929)];
+// key: bump when a bank changes, or old saves point at new puzzles. pinned: puzzles #1, #2, ... in that order.
+const MODES = Object.fromEntries(Object.entries({
+  friends: { tab: "Friends", icon: "💬", bank: MESSAGES, key: "jimchatdle:v5", seed: 20260929, pinned: ["Has everyone got their secret Santa sorted?"], kicker: "someone in the chat said…", noun: "sender", by: "Sent by" },
+  movies: { tab: "Movies", icon: "🎬", bank: MOVIES, key: "jimchatdle:movies:v1", seed: 20260930, pinned: [], kicker: "a famous movie line…", noun: "actor", by: "Said by" },
+  speeches: { tab: "Speeches", icon: "🎤", bank: SPEECHES, key: "jimchatdle:speeches:v1", seed: 20260931, pinned: [], kicker: "someone famous once said…", noun: "speaker", by: "Said by" },
+}).map(([id, m]) => {
+  const pinned = m.pinned.map((text) => m.bank.find((p) => p.text === text));
+  const order = [...pinned, ...seededShuffle(m.bank.filter((p) => !pinned.includes(p)), m.seed)];
+  return [id, { ...m, id, order, names: [...new Set(m.bank.map((p) => p.from))].sort() }];
+}));
+let modeId = MODES[location.hash.slice(1)] ? location.hash.slice(1) : "friends";
+const M = () => MODES[modeId];
+const cap = (s) => s[0].toUpperCase() + s.slice(1);
+
 const TODAY = dayNumber(new Date());
-const puzzleFor = (day) => ORDER[((day % ORDER.length) + ORDER.length) % ORDER.length];
+const puzzleFor = (day) => { const o = M().order; return o[((day % o.length) + o.length) % o.length]; };
+
+// Friends pick from the whole chat. Famous modes show the answer plus decoys, seeded so everyone sees the same list.
+function choicesFor(puzzle) {
+  const m = M();
+  if (m.id === "friends") return m.names;
+  const decoys = seededShuffle(m.names.filter((n) => n !== puzzle.from), m.bank.indexOf(puzzle) + 1).slice(0, CHOICES - 1);
+  return [...decoys, puzzle.from].sort();
+}
 
 // ---- storage (localStorage can throw in private mode; the game still works, it just forgets) ----
 function loadStore() {
-  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch { return {}; }
+  try { return JSON.parse(localStorage.getItem(M().key)) || {}; } catch { return {}; }
 }
 function savedGame(store, day) {
   const g = store[day];
@@ -481,7 +636,7 @@ function save() {
   if (game.practice) return;
   try {
     const store = loadStore();
-    localStorage.setItem(STORE_KEY, JSON.stringify({ ...store, [game.day]: { guessed: game.guessed, senderGuesses: game.senderGuesses, calledHidden: game.calledHidden } }));
+    localStorage.setItem(M().key, JSON.stringify({ ...store, [game.day]: { guessed: game.guessed, senderGuesses: game.senderGuesses, calledHidden: game.calledHidden } }));
   } catch { /* not persisted: private mode or storage blocked */ }
 }
 
@@ -491,7 +646,7 @@ function startDaily() {
   return { day: TODAY, practice: false, puzzle: puzzleFor(TODAY), guessed: saved?.guessed ?? [], senderGuesses: saved?.senderGuesses ?? [], calledHidden: typeof saved?.calledHidden === "number" ? saved.calledHidden : null };
 }
 function startPractice() {
-  const pool = MESSAGES.filter((m) => m !== game.puzzle);
+  const pool = M().bank.filter((m) => m !== game.puzzle);
   return { day: null, practice: true, puzzle: pool[Math.floor(Math.random() * pool.length)], guessed: [], senderGuesses: [], calledHidden: null };
 }
 
@@ -529,6 +684,21 @@ let game = startDaily();
 let note = "";
 let freshLetter = null;
 let calling = false; // player hit "Call it" and is picking a name mid-letters
+let isAdmin = false; // ponytail: in-memory only, re-enter the code after a reload
+
+function load(g) {
+  game = g;
+  calling = false;
+  note = "";
+  buildNames();
+  render();
+}
+
+function setMode(id) {
+  modeId = id;
+  history.replaceState(null, "", `#${id}`);
+  load(startDaily());
+}
 
 const pickingName = (p) => !p.senderOver && (p.phase === "sender" || (p.phase === "letters" && calling));
 
@@ -568,11 +738,11 @@ function guessSender(name) {
 }
 
 function shareText(p) {
-  const title = game.practice ? "Jimchatdle · practice" : `Jimchatdle #${game.day + 1}`;
+  const title = `Jimchatdle ${M().tab}` + (game.practice ? " · practice" : ` #${game.day + 1}`);
   const hearts = "❤️".repeat(p.livesLeft) + "🖤".repeat(p.lives - p.livesLeft);
   const who = game.senderGuesses.map((n) => (n === game.puzzle.from ? "🟩" : "🟥")).join("");
   const early = game.calledHidden > 0 ? ` at ${Math.round(game.calledHidden * 100)}% hidden` : "";
-  return `${title} · ${p.score}/100\n💬 Phrase ${p.phraseScore}/50 ${hearts}\n👤 Sender ${p.senderScore}/50 ${who}${early}`;
+  return `${title} · ${p.score}/100\n💬 Phrase ${p.phraseScore}/50 ${hearts}\n👤 ${cap(M().noun)} ${p.senderScore}/50 ${who}${early}`;
 }
 
 function stats() {
@@ -598,6 +768,8 @@ function stats() {
 function render() {
   const p = progress(game);
   $("puzzleTag").textContent = puzzleLabel();
+  $("kicker").textContent = M().kicker;
+  for (const b of $("modes").children) b.setAttribute("aria-pressed", b.dataset.mode === modeId);
   renderBubble(p);
   renderSender(p);
   renderLives(p);
@@ -616,7 +788,7 @@ function defaultNote(p) {
   if (p.phase === "letters" && calling) return `Who said it? (${plural(p.triesLeft, "call", "calls")} left)`;
   if (p.phase === "letters" && p.gotSender) return "Sender locked in. Now finish the message.";
   if (p.phase === "letters" && p.senderOver) return "Out of calls. Finish the message for points.";
-  if (p.phase === "letters") return "Solve the message. Call the sender early for bonus points.";
+  if (p.phase === "letters") return `Solve the message. Call the ${M().noun} early for bonus points.`;
   if (p.phase === "sender") {
     const lead = p.solved ? "Cracked it." : "Out of lives, so here's the message.";
     return `${lead} Who sent it? (${plural(p.triesLeft, "call", "calls")} left)`;
@@ -655,7 +827,8 @@ function renderSender(p) {
   const av = $("avatar");
   av.innerHTML = known ? chibi(who) ?? esc(who[0]) : "?";
   av.classList.toggle("known", known);
-  $("senderName").textContent = `— ${known ? who : "???"}`;
+  const src = game.puzzle.src ? `, ${game.puzzle.src}` : "";
+  $("senderName").textContent = `— ${known ? who + src : "???"}`;
 }
 
 function renderLives(p) {
@@ -698,8 +871,23 @@ function renderKeyboard(p) {
   }
 }
 
+function buildModes() {
+  $("modes").replaceChildren(...Object.values(MODES).map((m) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "mode";
+    b.dataset.mode = m.id;
+    const icon = document.createElement("span");
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = m.icon;
+    b.append(icon, m.tab);
+    b.addEventListener("click", () => { if (m.id !== modeId || game.practice) setMode(m.id); });
+    return b;
+  }));
+}
+
 function buildNames() {
-  $("names").replaceChildren(...FRIENDS.map((name) => {
+  $("names").replaceChildren(...choicesFor(game.puzzle).map((name) => {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "name";
@@ -738,7 +926,7 @@ function renderResult(p) {
     <div class="card-top"><span class="no">${puzzleLabel()}</span><span class="brand">Jimchatdle</span></div>
     <div class="box dim"><p class="label">You called</p><p class="guesses">${guesses}</p></div>
     <div class="box answer">
-      <p class="label">Sent by</p>
+      <p class="label">${M().by}</p>
       <div class="who"><span class="avatar">${chibi(from) ?? esc(from[0])}</span>${esc(from)}</div>
     </div>
     <div>
@@ -747,7 +935,7 @@ function renderResult(p) {
     </div>
     <div class="breakdown">
       <div class="box dim"><p class="label">Phrase</p><p class="part">${p.phraseScore}<small>/50</small></p><p class="detail">${phraseDetail}</p></div>
-      <div class="box dim"><p class="label">Sender</p><p class="part">${p.senderScore}<small>/50</small></p><p class="detail">${senderDetail}</p></div>
+      <div class="box dim"><p class="label">${cap(M().noun)}</p><p class="part">${p.senderScore}<small>/50</small></p><p class="detail">${senderDetail}</p></div>
     </div>
     ${s ? `<dl class="stats">
       <div><dt>Played</dt><dd>${s.played}</dd></div>
@@ -757,15 +945,15 @@ function renderResult(p) {
     <pre class="share-preview" id="sharePreview">${esc(shareText(p))}</pre>
     <div class="actions">
       <button class="pill solid" id="shareBtn" type="button">Copy result →</button>
-      <button class="pill dashed" id="practiceBtn" type="button">${game.practice ? "Another one" : "Practice one"}</button>
+      ${isAdmin ? `<button class="pill dashed" id="practiceBtn" type="button">${game.practice ? "Another one" : "Practice one"}</button>` : ""}
     </div>
     ${game.practice
       ? `<button class="pill dashed" id="todayBtn" type="button">Back to today's</button>`
       : `<p class="next">Next message in <span id="countdown">--:--:--</span></p>`}
   `;
   $("shareBtn").addEventListener("click", () => copyShare(p));
-  $("practiceBtn").addEventListener("click", () => { game = startPractice(); note = ""; render(); });
-  $("todayBtn")?.addEventListener("click", () => { game = startDaily(); note = ""; render(); });
+  $("practiceBtn")?.addEventListener("click", () => load(startPractice()));
+  $("todayBtn")?.addEventListener("click", () => load(startDaily()));
   tickCountdown();
 }
 
@@ -799,7 +987,7 @@ function shake() {
 
 // ---- boot ----
 document.addEventListener("keydown", (e) => {
-  if (e.ctrlKey || e.metaKey || e.altKey || $("help").open) return;
+  if (e.ctrlKey || e.metaKey || e.altKey || document.querySelector("dialog[open]")) return;
   if (e.key === "Escape" && calling) setCalling(false);
   else if (/^[a-z]$/i.test(e.key)) guessLetter(e.key.toLowerCase());
 });
@@ -807,18 +995,45 @@ $("helpBtn").addEventListener("click", () => $("help").showModal());
 $("callBtn").addEventListener("click", () => setCalling(true));
 $("backBtn").addEventListener("click", () => setCalling(false));
 $("resetBtn").addEventListener("click", () => {
-  if (!confirm("Wipe today's game and all your stats?")) return;
-  try { localStorage.removeItem(STORE_KEY); } catch { /* nothing was saved anyway */ }
-  calling = false;
-  note = "";
-  game = startDaily();
+  if (!confirm(`Wipe today's ${M().tab} game and all your ${M().tab} stats?`)) return;
+  try { localStorage.removeItem(M().key); } catch { /* nothing was saved anyway */ }
+  load(startDaily());
+});
+
+// ---- admin: code unlocks playing any puzzle in the current mode ----
+async function sha256(text) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+function renderAdmin() {
+  $("adminLock").hidden = isAdmin;
+  $("adminTools").hidden = !isAdmin;
+  if (!isAdmin) return;
+  const today = puzzleFor(TODAY);
+  $("adminPick").replaceChildren(...M().order.map((p, i) =>
+    new Option(`${M().tab} day ${i + 1}${p === today ? " (today)" : ""} · ${p.from}: ${p.text}`, i, false, p === game.puzzle)));
+}
+$("adminBtn").addEventListener("click", () => { renderAdmin(); $("admin").showModal(); });
+$("adminLock").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  // crypto.subtle only exists on https/localhost; anywhere else the code just won't unlock
+  const ok = Boolean(crypto.subtle) && (await sha256($("adminCode").value)) === ADMIN_HASH;
+  $("adminCode").value = "";
+  $("adminErr").hidden = ok;
+  if (!ok) return;
+  isAdmin = true;
+  renderAdmin();
   render();
+});
+$("adminPlay").addEventListener("click", () => {
+  $("admin").close();
+  load({ day: null, practice: true, puzzle: M().order[$("adminPick").value], guessed: [], senderGuesses: [], calledHidden: null });
 });
 setInterval(tickCountdown, 1000);
 
 buildKeyboard();
-buildNames();
-render();
+buildModes();
+load(game);
 </script>
 </body>
 </html>
