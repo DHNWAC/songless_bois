@@ -87,6 +87,7 @@
   .mode { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; border: 0; border-radius: 16px; background: #fff; font-size: .72rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; box-shadow: 0 2px 0 var(--rule); transition: transform .1s, box-shadow .1s; }
   .mode span { font-size: 1.3rem; letter-spacing: 0; }
   .mode:hover:not([aria-pressed="true"]) { transform: translateY(-1px); box-shadow: 0 0 0 2px var(--tomato); }
+  .mode.done::after { content: "✓ done"; font-size: .58rem; letter-spacing: .1em; opacity: .65; }
   .mode[aria-pressed="true"] { background: var(--ink); color: #fff; box-shadow: 0 10px 22px -12px rgba(30, 31, 36, .7); }
   .breakdown { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .part { font-size: 1.6rem; font-weight: 900; margin-top: 2px; }
@@ -206,7 +207,7 @@
     <li>Hit <b>I know who said it</b> whenever you're ready. You get 2 calls. A wrong call sends you back to the letters.</li>
     <li>A right call doesn't end the game. You still finish the message.</li>
     <li>You get two scores out of 50 that add up to 100. <b>Phrase</b> rewards solving with lives to spare. <b>Who</b> rewards calling it early and in fewer calls.</li>
-    <li>There's one new puzzle per mode each day. Copy your result and brag in the chat.</li>
+    <li>There's one new puzzle per mode each day. Finish all three for your daily total out of 300, then copy it to the chat.</li>
   </ol>
   <form method="dialog"><button class="pill">Got it</button></form>
 </dialog>
@@ -618,7 +619,7 @@ function chibi(name) {
 
 // key: bump when a bank changes, or old saves point at new puzzles. pinned: puzzles #1, #2, ... in that order.
 const MODES = Object.fromEntries(Object.entries({
-  friends: { tab: "Friends", icon: "💬", bank: MESSAGES, key: "jimchatdle:v6", seed: 20260929, pinned: ["Travis wanted, you know, a secure concert before and after Astroworld Houston", "Has everyone got their secret Santa sorted?"], kicker: "someone in the chat said…", noun: "sender", by: "Sent by" },
+  friends: { tab: "Jimseng", icon: "💬", bank: MESSAGES, key: "jimchatdle:v6", seed: 20260929, pinned: ["Travis wanted, you know, a secure concert before and after Astroworld Houston", "Has everyone got their secret Santa sorted?"], kicker: "someone in the chat said…", noun: "sender", by: "Sent by" },
   movies: { tab: "Movies", icon: "🎬", bank: MOVIES, key: "jimchatdle:movies:v1", seed: 20260930, pinned: [], kicker: "a famous movie line…", noun: "actor", by: "Said by" },
   speeches: { tab: "Speeches", icon: "🎤", bank: SPEECHES, key: "jimchatdle:speeches:v1", seed: 20260931, pinned: [], kicker: "someone famous once said…", noun: "speaker", by: "Said by" },
 }).map(([id, m]) => {
@@ -631,7 +632,7 @@ const M = () => MODES[modeId];
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
 
 const TODAY = dayNumber(new Date());
-const puzzleFor = (day) => { const o = M().order; return o[((day % o.length) + o.length) % o.length]; };
+const puzzleFor = (day, m = M()) => { const o = m.order; return o[((day % o.length) + o.length) % o.length]; };
 
 // Friends pick from the whole chat. Famous modes show the answer plus decoys, seeded so everyone sees the same list.
 function choicesFor(puzzle) {
@@ -642,8 +643,8 @@ function choicesFor(puzzle) {
 }
 
 // ---- storage (localStorage can throw in private mode; the game still works, it just forgets) ----
-function loadStore() {
-  try { return JSON.parse(localStorage.getItem(M().key)) || {}; } catch { return {}; }
+function loadStore(m = M()) {
+  try { return JSON.parse(localStorage.getItem(m.key)) || {}; } catch { return {}; }
 }
 function savedGame(store, day) {
   const g = store[day];
@@ -809,13 +810,27 @@ function guessSender(name) {
   render();
 }
 
-function shareText(p) {
-  const title = `Jimchatdle ${M().tab}` + (game.practice ? " · practice" : ` #${game.day + 1}`);
+// One line per round, e.g. "🎬 Movies 71/100 ❤️❤️🖤 🟥🟩 · typed at 89%"
+function shareLine({ m, g, p }) {
   const hearts = "❤️".repeat(p.livesLeft) + "🖤".repeat(p.lives - p.livesLeft);
-  const who = game.senderGuesses.map((n) => (n === game.puzzle.from ? "🟩" : "🟥")).join("");
-  const early = game.calledHidden > 0 ? ` at ${Math.round(game.calledHidden * 100)}% hidden` : "";
-  const typed = p.solvedAt > 0 ? ` typed at ${Math.round(p.solvedAt * 100)}% hidden` : "";
-  return `${title} · ${p.score}/100\n💬 Phrase ${p.phraseScore}/50 ${hearts}${typed}\n👤 ${cap(M().noun)} ${p.senderScore}/50 ${who}${early}`;
+  const who = g.senderGuesses.map((n) => (n === g.puzzle.from ? "🟩" : "🟥")).join("");
+  const typed = p.solvedAt > 0 ? ` · typed at ${Math.round(p.solvedAt * 100)}%` : "";
+  return `${m.icon} ${m.tab} ${p.score}/100 ${hearts} ${who}${typed}`;
+}
+function shareText(rounds) {
+  const total = rounds.reduce((sum, r) => sum + r.p.score, 0);
+  const title = `Jimchatdle ${game.practice ? "practice" : `#${TODAY + 1}`} · ${total}/${rounds.length * 100}`;
+  return [title, ...rounds.map(shareLine)].join("\n");
+}
+
+// Today's daily round in every mode; p is null until that round is finished.
+function todayRounds() {
+  return Object.values(MODES).map((m) => {
+    const saved = savedGame(loadStore(m), TODAY);
+    const g = saved && { ...saved, puzzle: puzzleFor(TODAY, m) };
+    const p = g && progress(g);
+    return { m, g, p: p?.phase === "done" ? p : null };
+  });
 }
 
 function stats() {
@@ -842,7 +857,11 @@ function render() {
   const p = progress(game);
   $("puzzleTag").textContent = puzzleLabel();
   $("kicker").textContent = M().kicker;
-  for (const b of $("modes").children) b.setAttribute("aria-pressed", b.dataset.mode === modeId);
+  const doneIds = new Set(todayRounds().filter((r) => r.p).map((r) => r.m.id));
+  for (const b of $("modes").children) {
+    b.setAttribute("aria-pressed", b.dataset.mode === modeId);
+    b.classList.toggle("done", doneIds.has(b.dataset.mode));
+  }
   renderBubble(p);
   renderSender(p);
   renderLives(p);
@@ -998,6 +1017,17 @@ function renderResult(p) {
     : `${p.solvedAt > 0 ? `Typed it at ${Math.round(p.solvedAt * 100)}% hidden` : "Solved"}, ${plural(p.lives - p.livesLeft, "life", "lives")} lost`;
   const senderDetail = !p.gotSender ? "Got away"
     : `${game.calledHidden > 0 ? `Called at ${Math.round(game.calledHidden * 100)}% hidden` : "Named at the end"}, ${plural(game.senderGuesses.length, "call", "calls")}`;
+  // Practice shares on its own; the daily share waits until all three modes are done.
+  const rounds = game.practice ? [{ m: M(), g: game, p }] : todayRounds();
+  const left = rounds.filter((r) => !r.p);
+  const text = left.length ? "" : shareText(rounds);
+  const practiceBtn = isAdmin ? `<button class="pill dashed" id="practiceBtn" type="button">${game.practice ? "Another one" : "Practice one"}</button>` : "";
+  const shareHtml = left.length ? `
+    <div class="box dim"><p class="label">Today's total</p><p class="part">${rounds.length - left.length}<small>/${rounds.length} rounds done</small></p><p class="detail">Finish all three to copy your total out of 300.</p></div>
+    <div class="actions"><button class="pill solid" id="nextRoundBtn" type="button">Next: ${left[0].m.icon} ${left[0].m.tab} →</button>${practiceBtn}</div>` : `
+    ${game.practice ? "" : `<div><p class="label">Today's total</p><h2 class="landed">${rounds.reduce((sum, r) => sum + r.p.score, 0)}<small>/300</small></h2></div>`}
+    <pre class="share-preview" id="sharePreview">${esc(text)}</pre>
+    <div class="actions"><button class="pill solid" id="shareBtn" type="button">${game.practice ? "Copy result" : "Copy all three"} →</button>${practiceBtn}</div>`;
   const guesses = game.senderGuesses
     .map((n) => `<span class="${n === from ? "" : "no-match"}">${esc(n)}</span>`).join("");
   el.innerHTML = `
@@ -1020,25 +1050,22 @@ function renderResult(p) {
       <div><dt>Average</dt><dd>${s.average}</dd></div>
       <div><dt>Streak</dt><dd>${s.streak}</dd></div>
     </dl>` : ""}
-    <pre class="share-preview" id="sharePreview">${esc(shareText(p))}</pre>
-    <div class="actions">
-      <button class="pill solid" id="shareBtn" type="button">Copy result →</button>
-      ${isAdmin ? `<button class="pill dashed" id="practiceBtn" type="button">${game.practice ? "Another one" : "Practice one"}</button>` : ""}
-    </div>
+    ${shareHtml}
     ${game.practice
       ? `<button class="pill dashed" id="todayBtn" type="button">Back to today's</button>`
       : `<p class="next">Next message in <span id="countdown">--:--:--</span></p>`}
   `;
-  $("shareBtn").addEventListener("click", () => copyShare(p));
+  $("shareBtn")?.addEventListener("click", () => copyShare(text));
+  $("nextRoundBtn")?.addEventListener("click", () => setMode(left[0].m.id));
   $("practiceBtn")?.addEventListener("click", () => load(startPractice()));
   $("todayBtn")?.addEventListener("click", () => load(startDaily()));
   tickCountdown();
 }
 
-async function copyShare(p) {
+async function copyShare(text) {
   const btn = $("shareBtn");
   try {
-    await navigator.clipboard.writeText(shareText(p));
+    await navigator.clipboard.writeText(text);
     btn.textContent = "Copied ✓";
   } catch {
     getSelection().selectAllChildren($("sharePreview"));
