@@ -28,6 +28,15 @@ const GAMES = [
     accentColor: '#60a5fa',
   },
   {
+    id: 'jimchatdle',
+    href: '/jimchatdle',
+    emoji: '💬',
+    name: 'Jimchatdle',
+    tagline: 'Guess the message, then who sent it',
+    live: true,
+    accentColor: '#ff5f3b',
+  },
+  {
     id: 'case-open',
     href: '/case-open',
     emoji: '📦',

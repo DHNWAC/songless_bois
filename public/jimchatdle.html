@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#e9e6de">
+<title>Jimchatdle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Caveat+Brush&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #e9e6de;
+    --paper: #fdfaf2;
+    --ink: #1e1f24;
+    --ink-soft: #5c5b58;
+    --rule: #d6d1c6;
+    --tomato: #ff5f3b;
+    --yellow: #ffe066;
+    --blue: #4a6bff;
+    --blue-deep: #3d59e3;
+    --font: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --hand: "Caveat Brush", "Comic Sans MS", cursive;
+    --shadow: 0 28px 50px -24px rgba(80, 55, 30, .45);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  [hidden] { display: none !important; }
+  body { min-height: 100dvh; background: var(--cream); color: var(--ink); font-family: var(--font); font-weight: 500; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .label { font-size: .72rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
+
+  .app { max-width: 560px; min-height: 100dvh; margin: 0 auto; padding: 24px 16px 32px; display: flex; flex-direction: column; gap: 20px; }
+
+  /* ---- the orange message card ---- */
+  .card { background: var(--tomato); color: #fff; border-radius: 28px; padding: 22px 24px 20px; box-shadow: var(--shadow); }
+  .card-top { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 1.05rem; }
+  .card-top .no { margin-left: auto; }
+  .help { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .7); background: none; font-weight: 900; font-size: .9rem; }
+  .help:hover { background: rgba(255, 255, 255, .15); }
+  .kicker { font-family: var(--hand); color: var(--yellow); font-size: 1.6rem; transform: rotate(-2deg); margin: 26px 0 10px; }
+
+  .message { display: flex; flex-wrap: wrap; column-gap: .42em; row-gap: .2em; font-weight: 800; font-size: clamp(1.6rem, 7vw, 2.3rem); line-height: 1.2; letter-spacing: -.01em; }
+  .message.shake { animation: shake .35s; }
+  .word { display: inline-flex; }
+  .slot { display: inline-block; }
+  /* only still-hidden letters reserve a blank; revealed ones sit at natural width */
+  .slot:not(.fixed, .shown, .missed) { min-width: .55em; margin: 0 .05em; border-bottom: 3px solid rgba(255, 255, 255, .6); }
+  .slot.missed { color: var(--yellow); }
+  .slot.pop { animation: pop .3s ease-out; }
+
+  .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 26px; }
+  .signed { display: flex; align-items: center; gap: 8px; font-family: var(--hand); font-size: 1.45rem; }
+  .avatar { flex: none; width: 42px; height: 42px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; font: 900 1rem var(--font); border: 2px dashed rgba(255, 255, 255, .7); }
+  .avatar.known { border: 0; animation: pop .35s ease-out; }
+  .avatar svg { width: 100%; height: 100%; display: block; }
+  .lives { display: flex; align-items: center; gap: 4px; }
+  .lives::before { content: "Lives"; font-size: .68rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; margin-right: 4px; opacity: .85; }
+  .life { font-size: 1.15rem; line-height: 1; color: #fff; transition: color .2s, transform .2s; }
+  .life.lost { color: rgba(255, 255, 255, .3); transform: scale(.8); }
+
+  .status { min-height: 1.4em; text-align: center; font-weight: 700; color: var(--ink-soft); }
+
+  /* ---- keyboard ---- */
+  .keyboard { display: flex; flex-direction: column; gap: 8px; }
+  .pill.call, .pill.back { flex: none; align-self: center; width: min(100%, 320px); }
+  .call { margin-top: auto; border: 0; background: var(--ink); color: #fff; box-shadow: 0 10px 22px -12px rgba(30, 31, 36, .7); }
+  .call:hover { background: #33343b; }
+  .back { border: 2px dashed var(--ink-soft); background: none; color: var(--ink); }
+  .landed small { font-size: 1.1rem; opacity: .8; margin-right: 6px; }
+  .reset { align-self: center; border: 0; background: none; color: var(--ink-soft); font-size: .7rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 3px; opacity: .7; }
+  .reset:hover { opacity: 1; }
+  .home { align-self: flex-start; color: var(--ink-soft); font-size: .85rem; font-weight: 700; text-decoration: none; }
+  .home:hover { color: var(--ink); }
+  .breakdown { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .part { font-size: 1.6rem; font-weight: 900; margin-top: 2px; }
+  .part small { font-size: .9rem; opacity: .75; }
+  .breakdown .detail { font-size: .82rem; }
+  .kb-row { display: flex; justify-content: center; gap: 6px; }
+  .key {
+    flex: 1; max-width: 46px; height: 54px; border: 0; border-radius: 10px;
+    background: #fff; font-weight: 800; font-size: 1.05rem; text-transform: uppercase;
+    box-shadow: 0 2px 0 var(--rule); transition: background .15s, transform .08s;
+  }
+  .key:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 3px 0 var(--rule); }
+  .key:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+  .key.hit { background: var(--yellow); box-shadow: none; }
+  .key.miss { background: transparent; color: #b3aea4; box-shadow: inset 0 0 0 1.5px var(--rule); }
+  .key:disabled { cursor: default; }
+
+  /* ---- who said it ---- */
+  .names { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
+  .name {
+    display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 6px; min-width: 0; text-align: left;
+    border: 0; border-radius: 99px; background: #fff; font-weight: 800; font-size: .92rem;
+    box-shadow: 0 2px 0 var(--rule); transition: transform .1s, box-shadow .1s;
+  }
+  .name:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 0 0 2px var(--tomato); }
+  .name .dot { flex: none; width: 34px; height: 34px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--cream); }
+  .name .dot svg { width: 100%; height: 100%; display: block; }
+  .name.wrong { opacity: .35; text-decoration: line-through; cursor: default; box-shadow: none; }
+
+  /* ---- the blue result card ---- */
+  .result { display: flex; flex-direction: column; gap: 12px; padding: 20px 22px 22px; border-radius: 28px; background: var(--blue); color: #fff; box-shadow: var(--shadow); transform: rotate(-1deg); animation: rise .45s ease-out; }
+  .result .card-top .no { margin: 0; }
+  .result .card-top .brand { margin-left: auto; }
+  .box { border-radius: 16px; padding: 12px 16px; }
+  .box.dim { background: var(--blue-deep); }
+  .box.answer { background: var(--paper); color: var(--ink); box-shadow: 0 0 0 3px var(--yellow); }
+  .guesses { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 4px; font-size: 1.15rem; font-weight: 800; }
+  .guesses .no-match { text-decoration: line-through; opacity: .6; }
+  .who { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 1.6rem; font-weight: 900; }
+  .who .avatar { width: 48px; height: 48px; border: 0; background: var(--cream); }
+  .landed { font-size: 2.2rem; font-weight: 900; line-height: 1; color: var(--yellow); letter-spacing: -.02em; margin-top: 2px; }
+  .detail { font-weight: 700; opacity: .9; }
+  .stats { display: flex; gap: 24px; padding-top: 10px; border-top: 1.5px solid rgba(255, 255, 255, .25); }
+  .stats div { display: flex; flex-direction: column-reverse; }
+  .stats dd { font-size: 1.5rem; font-weight: 900; }
+  .stats dt { font-size: .65rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; opacity: .8; }
+  .share-preview { padding: 12px 16px; border-radius: 16px; background: var(--blue-deep); font: 700 .92rem/1.6 var(--font); white-space: pre-wrap; user-select: all; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  .pill { flex: 1; min-width: 150px; padding: 15px 18px; border-radius: 99px; font-size: .78rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
+  .pill.solid { border: 0; background: #fff; color: var(--blue); box-shadow: 0 10px 22px -10px rgba(20, 30, 90, .6); }
+  .pill.solid:active { transform: scale(.98); }
+  .pill.dashed { border: 2px dashed rgba(255, 255, 255, .85); background: none; }
+  .pill.dashed:hover { background: rgba(255, 255, 255, .1); }
+  .next { text-align: center; font-size: .7rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; opacity: .85; }
+
+  /* ---- how to play ---- */
+  dialog { max-width: min(420px, calc(100vw - 32px)); padding: 26px 24px; border: 0; border-radius: 24px; background: var(--paper); color: var(--ink); box-shadow: var(--shadow); }
+  dialog::backdrop { background: rgba(30, 31, 36, .45); }
+  dialog h2 { display: inline; font-size: 1.7rem; font-weight: 900; background: linear-gradient(transparent 55%, var(--yellow) 55%); padding: 0 4px; }
+  dialog ol { margin-top: 18px; padding-left: 1.2em; display: grid; gap: 10px; line-height: 1.45; font-weight: 600; color: var(--ink-soft); }
+  dialog ol ::marker { font-weight: 900; color: var(--tomato); }
+  dialog .pill { width: 100%; margin-top: 20px; border: 0; background: var(--tomato); color: #fff; }
+
+  @keyframes pop { from { transform: translateY(4px) scale(.4); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes shake { 25% { transform: translateX(-6px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-3px); } }
+  @keyframes rise { from { transform: translateY(16px) rotate(-1deg); opacity: 0; } to { transform: rotate(-1deg); opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <a class="home" href="/">← Back</a>
+  <article class="card" aria-label="The mystery message">
+    <header class="card-top">
+      <span class="brand">Jimchatdle</span>
+      <span class="no" id="puzzleTag"></span>
+      <button class="help" id="helpBtn" type="button" aria-label="How to play">?</button>
+    </header>
+    <p class="kicker">someone in the chat said…</p>
+    <div class="message" id="bubble" aria-hidden="true"></div>
+    <p class="sr-only" id="srMsg"></p>
+    <footer class="card-foot">
+      <p class="signed"><span class="avatar" id="avatar" aria-hidden="true">?</span><span id="senderName"></span></p>
+      <div class="lives" id="lives" role="img"></div>
+    </footer>
+  </article>
+
+  <p class="status" id="status" aria-live="polite"></p>
+  <button class="pill call" id="callBtn" type="button">I know who said it →</button>
+  <button class="pill back" id="backBtn" type="button" hidden>← Back to letters</button>
+  <section class="keyboard" id="keyboard" aria-label="Letters"></section>
+  <section class="names" id="names" aria-label="Who sent it?" hidden></section>
+  <section class="result" id="result" hidden></section>
+  <button class="reset" id="resetBtn" type="button">Reset progress</button>
+</div>
+
+<dialog id="help">
+  <h2>How to play</h2>
+  <ol>
+    <li>A real message from the group chat is hidden. Tap or type letters to reveal it.</li>
+    <li>Each wrong letter costs a life. Run out and the message is revealed anyway. Shorter messages get more lives.</li>
+    <li>Hit <b>I know who said it</b> whenever you're ready. You get 3 calls. A wrong call sends you back to the letters.</li>
+    <li>A right call doesn't end the game. You still finish the message.</li>
+    <li>You get two scores out of 50 that add up to 100. <b>Phrase</b> rewards solving with lives to spare. <b>Sender</b> rewards calling it early and in fewer calls.</li>
+    <li>There's one new message each day. Copy your result and brag in the chat.</li>
+  </ol>
+  <form method="dialog"><button class="pill">Got it</button></form>
+</dialog>
+
+<script>
+// Placeholder messages. Swap for the real Messenger export later.
+const MESSAGES = Object.entries({
+  Matt: [
+    "Leg day again, I physically cannot walk up the stairs",
+    "Anyone want to hit the gym at 7 tomorrow",
+    "Protein pancakes are actually elite, no debate",
+    "I just deadlifted my own body weight twice",
+    "Rest days are for people who have given up",
+    "Bro I pulled something in my back doing nothing",
+    "Five a side on Thursday, who's in",
+    "My new trainers came and they're so clean",
+    "Stop sending food pics, I'm on a cut",
+    "New PR on bench, I'm telling everyone",
+  ],
+  Kieran: [
+    "That was never a penalty, the ref needs glasses",
+    "Who's watching the match at the pub tonight",
+    "I've been on FIFA for six hours and lost every game",
+    "Premier League predictions, I'm calling it now",
+    "Bet you a tenner they bottle it in the second half",
+    "My fantasy team is an absolute disgrace",
+    "Ronaldo would never",
+    "Not saying I'm the best at five a side but",
+    "Group chat is dead, someone say something",
+    "Just booked tickets for the away game, no regrets",
+  ],
+  Kelvin: [
+    "Found a ramen spot that is genuinely life changing",
+    "Who wants to get dim sum on Sunday",
+    "I'm ordering Nando's, speak now or forever hold your peace",
+    "That burger was eleven out of ten, I'm not exaggerating",
+    "I've eaten three dinners today and I'm still hungry",
+    "Hot pot this weekend, I'll book the table",
+    "Is it too early to be thinking about lunch",
+    "The chicken wings at that place are criminal",
+    "My cooking is honestly restaurant quality now",
+    "Anyone tried the new bubble tea place yet",
+  ],
+  Omar: [
+    "Right, who is actually coming on Saturday",
+    "I've made a poll, please just vote",
+    "Everyone send me the money for the Airbnb",
+    "If nobody replies I'm booking it anyway",
+    "Plans are cancelled because no one confirmed",
+    "I've been planning this for three weeks lads",
+    "Meet outside the station at eight, don't be late",
+    "Why does organising anything in this chat take a month",
+    "Updated the spreadsheet, go check it",
+    "Ok final headcount, reply with a thumbs up",
+  ],
+  Daniel: [
+    "I made a game out of this group chat, you're welcome",
+    "Just built an app that nobody asked for",
+    "Guys my code finally works and I don't know why",
+    "Who's up for a games night at mine",
+    "I've been awake since four fixing one bug",
+    "Can we please pick a restaurant before midnight",
+    "New phone who dis",
+    "I'm getting into running, this is my personality now",
+    "Honestly this chat is the best part of my week",
+    "Wait what did I miss, my phone was on silent",
+  ],
+  Nazarat: [
+    "Has everyone got their secret Santa sorted?",
+    "This album is a masterpiece and I won't hear otherwise",
+    "Who's coming to the concert, I have two spare tickets",
+    "Made a playlist for the road trip, it's perfect",
+    "The bass drop at the end of that song is insane",
+    "I've had this song on repeat for three days",
+    "Festival lineup just dropped and I'm screaming",
+    "Anyone want to learn guitar with me",
+    "That opening act was better than the headliner",
+    "Karaoke tonight, I'm doing Bohemian Rhapsody",
+    "Put some respect on vinyl, it just sounds better",
+  ],
+  Edmund: [
+    "Technically speaking, a hot dog is a sandwich",
+    "Actually, that is a common misconception",
+    "I read the entire terms and conditions, it's worse than you think",
+    "Allow me to provide some historical context",
+    "If we are being pedantic, and we should be",
+    "I would argue the opposite, respectfully",
+    "That quote is from Seneca, not Einstein",
+    "Can we have a civilised debate about pineapple on pizza",
+    "I've prepared a short presentation on this topic",
+    "The word literally has lost all meaning",
+  ],
+  Miles: [
+    "Omw, five minutes away",
+    "Just woke up, what time is it",
+    "Sorry I fell asleep, is it still happening",
+    "My alarm didn't go off, I swear",
+    "Save me a seat, I'm running a bit late",
+    "Traffic is actually crazy right now",
+    "I'll be there by ten, maybe half ten",
+    "Can someone send me the address again",
+    "Missed the train by literally two seconds",
+    "I'm here, where are you all",
+  ],
+  Martin: [
+    "I used to hate facial hair but then it grew on me",
+    "Why did the scarecrow win an award? He was outstanding in his field",
+    "I only know twenty five letters of the alphabet, I don't know y",
+    "What do you call a fake noodle? An impasta",
+    "Reading a book about anti gravity, I can't put it down",
+    "The claustrophobic astronaut just needed some space",
+    "I'd tell you a construction joke but I'm still working on it",
+    "Nobody laughed at my joke at work today, tough crowd",
+    "Rate that pun out of ten, be honest",
+    "Parallel lines have so much in common, shame they'll never meet",
+  ],
+  Zarif: [
+    "Buy the dip, trust me on this one",
+    "My portfolio is down forty percent but I'm not selling",
+    "Diamond hands, we are going to the moon",
+    "Has anyone looked into index funds, I'm serious",
+    "I just read a thread that changed my life",
+    "This is not financial advice but",
+    "I'm starting a side hustle, hear me out",
+    "The market is doing something weird today",
+    "Compound interest is the eighth wonder of the world",
+    "Who wants in on my business idea",
+  ],
+  Diya: [
+    "Just landed, the view from the plane was unreal",
+    "Sending you all the photos from the trip now",
+    "Where should we go for a weekend away",
+    "I found flights to Lisbon for thirty quid",
+    "Golden hour hits different here",
+    "My camera roll is ninety percent sunsets",
+    "Anyone want to come hiking this weekend",
+    "Booking a cabin in the mountains, who's coming",
+    "Passport renewed, I'm ready for anything",
+    "The food here is incredible, I'm never leaving",
+  ],
+  Jasmine: [
+    "LMAOOO I'm actually crying",
+    "Not me sending this to the wrong chat",
+    "Why is this so accurate",
+    "The way I screamed at this",
+    "I cannot with you people",
+    "Who's going to tell him",
+    "This meme is literally us",
+    "Screenshotting this for later",
+    "I'm deceased, this is the funniest thing ever",
+    "Ok but the plot twist though",
+  ],
+  Emily: [
+    "My cat just knocked my coffee off the table again",
+    "Baked banana bread, who wants some",
+    "Look at my dog in his little raincoat",
+    "Sourdough attempt number four, it's getting better",
+    "The cat has claimed my laptop as her bed",
+    "I made too many cupcakes, come over",
+    "Adopting another cat is a reasonable decision",
+    "My plants are thriving and I'm so proud",
+    "Who wants to do a bake off this weekend",
+    "My dog ate a sock and he's completely fine",
+  ],
+  Sandeep: [
+    "Did anyone watch the cricket, what a finish",
+    "Get online, we need a fourth for the squad",
+    "One more game then I'm going to sleep",
+    "Lag cost me that round, not my fault",
+    "India are going to win the series, easy",
+    "The new update ruined my favourite character",
+    "Who's playing Warzone tonight",
+    "I carried the whole team and got no credit",
+    "Six sixes in an over, I've seen it all now",
+    "Headset on, jump in the party",
+  ],
+  Rachel: [
+    "Reminder that it's Omar's birthday on Friday",
+    "Has everyone sent their money for the present",
+    "Bring a jacket, it's going to rain tonight",
+    "I've set up a shared calendar for us all",
+    "Did everyone get home safe",
+    "Don't forget to book the table for eight",
+    "I've already bought the decorations for the party",
+    "Please drink some water tonight",
+    "Who has my umbrella from last time",
+    "Group photo at the end, no excuses",
+  ],
+}).flatMap(([from, texts]) => texts.map((text) => ({ from, text })));
+
+const SENDER_TRIES = 3;
+const LAUNCH = new Date(2026, 8, 29); // puzzle #1 (months are 0-based)
+const STORE_KEY = "jimchatdle:v5"; // bump when MESSAGES changes, or old saves point at new puzzles
+// Puzzles #1, #2, ... in this order; everything else is shuffled after them.
+const PINNED = ["Has everyone got their secret Santa sorted?"];
+const KB_ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const isLetter = (ch) => /[a-z]/i.test(ch);
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+function mulberry32(seed) {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Same seed for everyone, so the daily message is the same on every phone.
+function seededShuffle(list, seed) {
+  const rand = mulberry32(seed);
+  const out = [...list];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+function dayNumber(date) {
+  const midnight = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return Math.round((midnight - LAUNCH) / 86400000); // round absorbs DST hour shifts
+}
+
+function colorFor(name) {
+  let h = 0;
+  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  return `hsl(${h} 75% 68%)`;
+}
+
+// Placeholder chibi looks. Anyone missing here falls back to their initial.
+const LOOKS = {
+  Daniel:  { skin: "#a8714c", hair: "#1d1a1f", style: "short" },
+  Diya:    { skin: "#a36c47", hair: "#1d1a1f", style: "long", lashes: true },
+  Edmund:  { skin: "#f0cfa8", hair: "#1d1a1f", style: "side" },
+  Emily:   { skin: "#f3d3b0", hair: "#1d1a1f", style: "bob", lashes: true },
+  Jasmine: { skin: "#f1ceb0", hair: "#4a3024", style: "long", lashes: true },
+  Kelvin:  { skin: "#eecba3", hair: "#1d1a1f", style: "buzz" },
+  Kieran:  { skin: "#e9c59c", hair: "#1d1a1f", style: "short", mustache: true },
+  Martin:  { skin: "#eccaa2", hair: "#1d1a1f", style: "side" },
+  Matt:    { skin: "#f7d8c3", hair: "#c8612b", style: "widow", glasses: true },
+  Miles:   { skin: "#f6d6c2", hair: "#7a5230", style: "short" },
+  Nazarat: { skin: "#a97352", hair: "#1d1a1f", style: "quiff" },
+  Omar:    { skin: "#b27c55", hair: "#1d1a1f", style: "buzz", mustache: true, beard: true },
+  Rachel:  { skin: "#f8dcc8", hair: "#d9b26a", style: "long", lashes: true },
+  Sandeep: { skin: "#8a5838", hair: "#1d1a1f", style: "quiff" },
+  Zarif:   { skin: "#a26b48", hair: "#1d1a1f", style: "short" },
+};
+const HAIR_BACK = {
+  long: "M11 32 Q10 7 32 7 Q54 7 53 32 L56 60 L8 60Z",
+  bob: "M11 32 Q10 7 32 7 Q54 7 53 32 L54 47 L10 47Z",
+};
+const HAIR_FRONT = {
+  buzz: "M14 30 Q14 13.5 32 13.5 Q50 13.5 50 30 Q46 20 32 20 Q18 20 14 30Z",
+  widow: "M14 30 Q14 13.5 32 13.5 Q50 13.5 50 30 Q46 20 37 20 L32 26 L27 20 Q18 20 14 30Z",
+  short: "M13 33 Q10 8 32 8 Q54 8 51 33 Q49 21 40 19 Q31 25 17 22 Q14 26 13 33Z",
+  side: "M13 33 Q11 8 32 8 Q53 8 51 33 Q49 19 26 20 Q17 22 13 33Z",
+  quiff: "M13 33 Q9 6 36 3 Q57 7 51 33 Q48 19 34 18 Q20 18 13 33Z",
+  long: "M13 33 Q12 9 32 9 Q52 9 51 33 Q46 19 32 19 Q18 19 13 33Z",
+  bob: "M13 33 Q12 9 32 9 Q52 9 51 33 L51 25 Q32 27 13 25Z",
+};
+
+function chibi(name) {
+  const k = LOOKS[name];
+  if (!k) return null;
+  const ink = "#1d1a1f";
+  const eye = (x) => `<ellipse cx="${x}" cy="37" rx="2.6" ry="3.4" fill="${ink}"/><circle cx="${x + 0.9}" cy="35.8" r="0.9" fill="#fff"/>`;
+  return `<svg viewBox="0 0 64 64" aria-hidden="true">
+    <circle cx="32" cy="32" r="32" fill="${colorFor(name)}"/>
+    ${HAIR_BACK[k.style] ? `<path d="${HAIR_BACK[k.style]}" fill="${k.hair}"/>` : ""}
+    <path d="M8 64 Q10 52 32 52 Q54 52 56 64Z" fill="#2b2634"/>
+    <ellipse cx="32" cy="34" rx="18" ry="19" fill="${k.skin}"/>
+    ${k.beard ? `<path d="M14 36 Q15 56 32 56 Q49 56 50 36 Q47 49 32 50 Q17 49 14 36Z" fill="${k.hair}"/>` : ""}
+    <path d="${HAIR_FRONT[k.style]}" fill="${k.hair}" opacity="${/buzz|widow/.test(k.style) ? 0.8 : 1}"/>
+    ${eye(25)}${eye(39)}
+    ${k.lashes ? `<path d="M22.6 35 l-2.2-1.6 M41.4 35 l2.2-1.6" stroke="${ink}" stroke-width="1.2" stroke-linecap="round"/>` : ""}
+    ${k.glasses ? `<g fill="rgba(255,255,255,.18)" stroke="${ink}" stroke-width="1.5"><circle cx="25" cy="37" r="5.2"/><circle cx="39" cy="37" r="5.2"/><path d="M30.2 37 Q32 35.6 33.8 37" fill="none"/></g>` : ""}
+    <ellipse cx="20.5" cy="42.5" rx="3" ry="1.6" fill="#ff7b7b" opacity=".4"/><ellipse cx="43.5" cy="42.5" rx="3" ry="1.6" fill="#ff7b7b" opacity=".4"/>
+    ${k.mustache ? `<path d="M26.5 43 Q29 40.8 32 42.3 Q35 40.8 37.5 43 Q35 44 32 43.2 Q29 44 26.5 43Z" fill="${k.hair}"/>` : ""}
+    <path d="M29.5 45.5 Q32 47.5 34.5 45.5" stroke="${ink}" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+  </svg>`;
+}
+
+const FRIENDS = [...new Set(MESSAGES.map((m) => m.from))].sort();
+const pinned = PINNED.map((text) => MESSAGES.find((m) => m.text === text));
+const ORDER = [...pinned, ...seededShuffle(MESSAGES.filter((m) => !pinned.includes(m)), 20260929)];
+const TODAY = dayNumber(new Date());
+const puzzleFor = (day) => ORDER[((day % ORDER.length) + ORDER.length) % ORDER.length];
+
+// ---- storage (localStorage can throw in private mode; the game still works, it just forgets) ----
+function loadStore() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch { return {}; }
+}
+function savedGame(store, day) {
+  const g = store[day];
+  return g && Array.isArray(g.guessed) && Array.isArray(g.senderGuesses) ? g : null;
+}
+function save() {
+  if (game.practice) return;
+  try {
+    const store = loadStore();
+    localStorage.setItem(STORE_KEY, JSON.stringify({ ...store, [game.day]: { guessed: game.guessed, senderGuesses: game.senderGuesses, calledHidden: game.calledHidden } }));
+  } catch { /* not persisted: private mode or storage blocked */ }
+}
+
+// ---- game state ----
+function startDaily() {
+  const saved = savedGame(loadStore(), TODAY);
+  return { day: TODAY, practice: false, puzzle: puzzleFor(TODAY), guessed: saved?.guessed ?? [], senderGuesses: saved?.senderGuesses ?? [], calledHidden: typeof saved?.calledHidden === "number" ? saved.calledHidden : null };
+}
+function startPractice() {
+  const pool = MESSAGES.filter((m) => m !== game.puzzle);
+  return { day: null, practice: true, puzzle: pool[Math.floor(Math.random() * pool.length)], guessed: [], senderGuesses: [], calledHidden: null };
+}
+
+// Fewer distinct letters leaves more of the alphabet to miss with, so those messages get more lives.
+// ponytail: rough curve (8 distinct -> 8 lives, 16+ -> 4); retune once real messages are in
+const livesFor = (distinct) => Math.min(8, Math.max(4, Math.round(12 - distinct / 2)));
+
+function progress(g) {
+  const chars = [...g.puzzle.text.toLowerCase()].filter(isLetter);
+  const letters = new Set(chars);
+  const lives = livesFor(letters.size);
+  const misses = g.guessed.filter((l) => !letters.has(l));
+  const solved = [...letters].every((l) => g.guessed.includes(l));
+  const gotSender = g.senderGuesses.includes(g.puzzle.from);
+  const lettersOver = solved || misses.length >= lives;
+  const senderOver = gotSender || g.senderGuesses.length >= SENDER_TRIES;
+  const livesLeft = Math.max(0, lives - misses.length);
+  const revealed = chars.filter((c) => g.guessed.includes(c)).length / chars.length;
+  // share of the message hidden right now (0 once it's over and fully shown)
+  const hiddenNow = lettersOver ? 0 : 1 - revealed;
+  // Phrase /50: solving is 25 + up to 25 for lives kept; failing gets up to 20 for what you uncovered.
+  const phraseScore = solved ? Math.round(25 + (25 * livesLeft) / lives) : lettersOver ? Math.round(20 * revealed) : 0;
+  // Sender /50: 20 for the right name + up to 30 for how hidden the message was when called, cut by wrong calls.
+  const tryMultiplier = [1, 0.6, 0.3][g.senderGuesses.length - 1] ?? 0;
+  const senderScore = gotSender ? Math.round((20 + 30 * (g.calledHidden ?? 0)) * tryMultiplier) : 0;
+  return {
+    letters, misses, solved, gotSender, senderOver, lives, livesLeft, hiddenNow,
+    phraseScore, senderScore, score: phraseScore + senderScore,
+    triesLeft: SENDER_TRIES - g.senderGuesses.length,
+    phase: !lettersOver ? "letters" : senderOver ? "done" : "sender",
+  };
+}
+
+let game = startDaily();
+let note = "";
+let freshLetter = null;
+let calling = false; // player hit "Call it" and is picking a name mid-letters
+
+const pickingName = (p) => !p.senderOver && (p.phase === "sender" || (p.phase === "letters" && calling));
+
+function setCalling(on) {
+  calling = on;
+  note = "";
+  render();
+}
+
+function guessLetter(l) {
+  if (progress(game).phase !== "letters" || calling || game.guessed.includes(l)) return;
+  game = { ...game, guessed: [...game.guessed, l] };
+  const p = progress(game);
+  const hits = [...game.puzzle.text.toLowerCase()].filter((c) => c === l).length;
+  const L = l.toUpperCase();
+  freshLetter = hits ? l : null;
+  if (p.phase !== "letters") note = "";
+  else note = hits ? `Yep, ${hits === 1 ? `one ${L}` : `${hits} ${L}'s`}.` : `No ${L}. ${plural(p.livesLeft, "life", "lives")} left.`;
+  if (!hits) shake();
+  save();
+  render();
+}
+
+function guessSender(name) {
+  const before = progress(game);
+  if (!pickingName(before) || game.senderGuesses.includes(name)) return;
+  const right = name === game.puzzle.from;
+  game = { ...game, senderGuesses: [...game.senderGuesses, name], calledHidden: right ? before.hiddenNow : game.calledHidden };
+  calling = false;
+  const p = progress(game);
+  const stillLetters = p.phase === "letters";
+  if (right) note = stillLetters ? `Yes, it was ${name}! Now finish the message.` : "";
+  else if (p.senderOver) note = stillLetters ? `Not ${name}. Out of calls, finish the message for points.` : "";
+  else note = `Not ${name}. ${plural(p.triesLeft, "call", "calls")} left${stillLetters ? ", keep guessing letters" : ""}.`;
+  save();
+  render();
+}
+
+function shareText(p) {
+  const title = game.practice ? "Jimchatdle · practice" : `Jimchatdle #${game.day + 1}`;
+  const hearts = "❤️".repeat(p.livesLeft) + "🖤".repeat(p.lives - p.livesLeft);
+  const who = game.senderGuesses.map((n) => (n === game.puzzle.from ? "🟩" : "🟥")).join("");
+  const early = game.calledHidden > 0 ? ` at ${Math.round(game.calledHidden * 100)}% hidden` : "";
+  return `${title} · ${p.score}/100\n💬 Phrase ${p.phraseScore}/50 ${hearts}\n👤 Sender ${p.senderScore}/50 ${who}${early}`;
+}
+
+function stats() {
+  const store = loadStore();
+  let played = 0, total = 0, streak = 0;
+  for (const day of Object.keys(store)) {
+    const g = savedGame(store, day);
+    const p = g && progress({ ...g, puzzle: puzzleFor(Number(day)) });
+    if (p?.phase === "done") { played++; total += p.score; }
+  }
+  // ponytail: walks back day by day; fine for years of play
+  for (let d = TODAY; d > TODAY - 3650; d--) {
+    const g = savedGame(store, d);
+    const p = g && progress({ ...g, puzzle: puzzleFor(d) });
+    if (p?.phase === "done" && p.gotSender) streak++;
+    else if (d === TODAY && p?.phase !== "done") continue; // today still in progress
+    else break;
+  }
+  return { played, streak, average: played ? Math.round(total / played) : 0 };
+}
+
+// ---- rendering ----
+function render() {
+  const p = progress(game);
+  $("puzzleTag").textContent = puzzleLabel();
+  renderBubble(p);
+  renderSender(p);
+  renderLives(p);
+  renderKeyboard(p);
+  renderNames(p);
+  renderResult(p);
+  $("callBtn").hidden = !(p.phase === "letters" && !p.senderOver && !calling);
+  $("backBtn").hidden = !(p.phase === "letters" && calling);
+  $("status").textContent = note || defaultNote(p);
+  freshLetter = null;
+}
+
+const puzzleLabel = () => (game.practice ? "Practice" : `No. ${String(game.day + 1).padStart(3, "0")}`);
+
+function defaultNote(p) {
+  if (p.phase === "letters" && calling) return `Who said it? (${plural(p.triesLeft, "call", "calls")} left)`;
+  if (p.phase === "letters" && p.gotSender) return "Sender locked in. Now finish the message.";
+  if (p.phase === "letters" && p.senderOver) return "Out of calls. Finish the message for points.";
+  if (p.phase === "letters") return "Solve the message. Call the sender early for bonus points.";
+  if (p.phase === "sender") {
+    const lead = p.solved ? "Cracked it." : "Out of lives, so here's the message.";
+    return `${lead} Who sent it? (${plural(p.triesLeft, "call", "calls")} left)`;
+  }
+  return "";
+}
+
+function renderBubble(p) {
+  const revealAll = p.phase !== "letters";
+  const words = game.puzzle.text.split(/\s+/).map((word) => {
+    const w = document.createElement("span");
+    w.className = "word";
+    for (const ch of word) {
+      const s = document.createElement("span");
+      if (!isLetter(ch)) {
+        s.className = "slot fixed";
+        s.textContent = ch;
+      } else {
+        const l = ch.toLowerCase();
+        const known = game.guessed.includes(l);
+        s.className = "slot" + (known ? " shown" : revealAll ? " missed" : "") + (known && l === freshLetter ? " pop" : "");
+        s.textContent = known || revealAll ? ch : "";
+      }
+      w.append(s);
+    }
+    return w;
+  });
+  $("bubble").replaceChildren(...words);
+  $("srMsg").textContent = "Message: " + [...game.puzzle.text]
+    .map((ch) => (isLetter(ch) && !revealAll && !game.guessed.includes(ch.toLowerCase()) ? "_" : ch)).join("");
+}
+
+function renderSender(p) {
+  const known = p.phase === "done" || p.gotSender;
+  const who = game.puzzle.from;
+  const av = $("avatar");
+  av.innerHTML = known ? chibi(who) ?? esc(who[0]) : "?";
+  av.classList.toggle("known", known);
+  $("senderName").textContent = `— ${known ? who : "???"}`;
+}
+
+function renderLives(p) {
+  const dots = Array.from({ length: p.lives }, (_, i) => {
+    const s = document.createElement("span");
+    s.className = "life" + (i >= p.livesLeft ? " lost" : "");
+    s.textContent = "♥";
+    return s;
+  });
+  $("lives").replaceChildren(...dots);
+  $("lives").setAttribute("aria-label", `${p.livesLeft} of ${p.lives} lives left`);
+}
+
+function buildKeyboard() {
+  $("keyboard").replaceChildren(...KB_ROWS.map((row) => {
+    const r = document.createElement("div");
+    r.className = "kb-row";
+    r.append(...[...row].map((l) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "key";
+      b.dataset.key = l;
+      b.textContent = l;
+      b.setAttribute("aria-label", l.toUpperCase());
+      b.addEventListener("click", () => guessLetter(l));
+      return b;
+    }));
+    return r;
+  }));
+}
+
+function renderKeyboard(p) {
+  $("keyboard").hidden = p.phase !== "letters" || calling;
+  for (const b of document.querySelectorAll(".key")) {
+    const l = b.dataset.key;
+    const used = game.guessed.includes(l);
+    b.classList.toggle("hit", used && p.letters.has(l));
+    b.classList.toggle("miss", used && !p.letters.has(l));
+    b.disabled = used;
+  }
+}
+
+function buildNames() {
+  $("names").replaceChildren(...FRIENDS.map((name) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "name";
+    b.dataset.name = name;
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    dot.innerHTML = chibi(name) ?? esc(name[0]);
+    b.append(dot, name);
+    b.addEventListener("click", () => guessSender(name));
+    return b;
+  }));
+}
+
+function renderNames(p) {
+  $("names").hidden = !pickingName(p);
+  for (const b of $("names").children) {
+    const tried = game.senderGuesses.includes(b.dataset.name);
+    b.classList.toggle("wrong", tried);
+    b.disabled = tried;
+  }
+}
+
+function renderResult(p) {
+  const el = $("result");
+  el.hidden = p.phase !== "done";
+  if (el.hidden) return;
+  const s = game.practice ? null : stats();
+  const from = game.puzzle.from;
+  const headline = p.score >= 80 ? "Psychic." : p.score >= 55 ? "Called it." : p.score > 0 ? "Scraped it." : "Unlucky.";
+  const phraseDetail = p.solved ? `Solved, ${plural(p.misses.length, "miss", "misses")}` : "Ran out of lives";
+  const senderDetail = !p.gotSender ? "Got away"
+    : `${game.calledHidden > 0 ? `Called at ${Math.round(game.calledHidden * 100)}% hidden` : "Named at the end"}, ${plural(game.senderGuesses.length, "call", "calls")}`;
+  const guesses = game.senderGuesses
+    .map((n) => `<span class="${n === from ? "" : "no-match"}">${esc(n)}</span>`).join("");
+  el.innerHTML = `
+    <div class="card-top"><span class="no">${puzzleLabel()}</span><span class="brand">Jimchatdle</span></div>
+    <div class="box dim"><p class="label">You called</p><p class="guesses">${guesses}</p></div>
+    <div class="box answer">
+      <p class="label">Sent by</p>
+      <div class="who"><span class="avatar">${chibi(from) ?? esc(from[0])}</span>${esc(from)}</div>
+    </div>
+    <div>
+      <p class="label">You scored</p>
+      <h2 class="landed">${p.score}<small>/100</small> ${headline}</h2>
+    </div>
+    <div class="breakdown">
+      <div class="box dim"><p class="label">Phrase</p><p class="part">${p.phraseScore}<small>/50</small></p><p class="detail">${phraseDetail}</p></div>
+      <div class="box dim"><p class="label">Sender</p><p class="part">${p.senderScore}<small>/50</small></p><p class="detail">${senderDetail}</p></div>
+    </div>
+    ${s ? `<dl class="stats">
+      <div><dt>Played</dt><dd>${s.played}</dd></div>
+      <div><dt>Average</dt><dd>${s.average}</dd></div>
+      <div><dt>Streak</dt><dd>${s.streak}</dd></div>
+    </dl>` : ""}
+    <pre class="share-preview" id="sharePreview">${esc(shareText(p))}</pre>
+    <div class="actions">
+      <button class="pill solid" id="shareBtn" type="button">Copy result →</button>
+      <button class="pill dashed" id="practiceBtn" type="button">${game.practice ? "Another one" : "Practice one"}</button>
+    </div>
+    ${game.practice
+      ? `<button class="pill dashed" id="todayBtn" type="button">Back to today's</button>`
+      : `<p class="next">Next message in <span id="countdown">--:--:--</span></p>`}
+  `;
+  $("shareBtn").addEventListener("click", () => copyShare(p));
+  $("practiceBtn").addEventListener("click", () => { game = startPractice(); note = ""; render(); });
+  $("todayBtn")?.addEventListener("click", () => { game = startDaily(); note = ""; render(); });
+  tickCountdown();
+}
+
+async function copyShare(p) {
+  const btn = $("shareBtn");
+  try {
+    await navigator.clipboard.writeText(shareText(p));
+    btn.textContent = "Copied ✓";
+  } catch {
+    getSelection().selectAllChildren($("sharePreview"));
+    btn.textContent = "Press Ctrl+C";
+  }
+}
+
+function tickCountdown() {
+  const el = $("countdown");
+  if (!el) return;
+  const now = new Date();
+  if (dayNumber(now) !== TODAY) { el.textContent = "now, refresh!"; return; }
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const secs = Math.floor((next - now) / 1000);
+  el.textContent = [secs / 3600, (secs % 3600) / 60, secs % 60].map((n) => String(Math.floor(n)).padStart(2, "0")).join(":");
+}
+
+function shake() {
+  const b = $("bubble");
+  b.classList.remove("shake");
+  void b.offsetWidth; // restart the animation
+  b.classList.add("shake");
+}
+
+// ---- boot ----
+document.addEventListener("keydown", (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey || $("help").open) return;
+  if (e.key === "Escape" && calling) setCalling(false);
+  else if (/^[a-z]$/i.test(e.key)) guessLetter(e.key.toLowerCase());
+});
+$("helpBtn").addEventListener("click", () => $("help").showModal());
+$("callBtn").addEventListener("click", () => setCalling(true));
+$("backBtn").addEventListener("click", () => setCalling(false));
+$("resetBtn").addEventListener("click", () => {
+  if (!confirm("Wipe today's game and all your stats?")) return;
+  try { localStorage.removeItem(STORE_KEY); } catch { /* nothing was saved anyway */ }
+  calling = false;
+  note = "";
+  game = startDaily();
+  render();
+});
+setInterval(tickCountdown, 1000);
+
+buildKeyboard();
+buildNames();
+render();
+</script>
+</body>
+</html>
