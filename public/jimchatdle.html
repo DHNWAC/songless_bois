@@ -77,10 +77,6 @@
   .status { min-height: 1.4em; text-align: center; font-weight: 700; color: var(--ink-soft); }
 
   /* ---- guessing ---- */
-  .guess { display: flex; gap: 8px; }
-  .guess input { flex: 1; min-width: 0; padding: 14px 16px; border: 2px solid var(--ink); border-radius: 16px; background: #fff; color: var(--ink); font: 700 1.05rem var(--font); }
-  .go { flex: none; padding: 0 22px; border: 0; border-radius: 16px; background: var(--ink); color: #fff; font-size: .78rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
-  .go:hover { background: #33343b; }
   .skip { align-self: center; width: min(100%, 320px); padding: 13px 18px; border: 2px dashed var(--ink-soft); border-radius: 99px; background: none; font-size: .74rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
   .skip:hover { border-style: solid; }
   .names { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
@@ -167,11 +163,6 @@
   </article>
 
   <p class="status" id="status" aria-live="polite"></p>
-  <form class="guess" id="guessForm" hidden>
-    <input id="guessInput" list="nameList" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="go" placeholder="Who said it?" aria-label="Who said it?">
-    <datalist id="nameList"></datalist>
-    <button class="go" type="submit">Guess</button>
-  </form>
   <section class="names" id="names" aria-label="Who said it?" hidden></section>
   <button class="skip" id="skipBtn" type="button" hidden>Skip, show more →</button>
   <section class="result" id="result" hidden></section>
@@ -502,6 +493,7 @@ const SPEECHES = [
 const LAUNCH = new Date(2026, 8, 29); // puzzle #1 in every round (months are 0-based)
 const TURNS = 6;
 const POINTS = [100, 80, 60, 40, 25, 10]; // score for getting it on turn 1, 2, ...
+const CHOICES = 16; // Movies/Speeches show the answer plus 15 decoys, about the size of the chat
 const REVEAL = [0.08, 0.18, 0.3, 0.45, 0.65, 1]; // share of the quote's letters shown on turn 1, 2, ...
 const ADMIN_HASH = "b8dc2c143be8994682b08461f46487e05874e59dd9ab65cf973e3a3c67a763aa"; // sha256 of the admin code
 
@@ -593,15 +585,13 @@ function chibi(name) {
   </svg>`;
 }
 
-const lettersOf = (s) => s.toLowerCase().normalize("NFD").replace(/[^a-z]/g, "");
 
 // key: bump when a bank or the save shape changes, or old saves point at new puzzles. pinned: puzzles #1, #2, ... in that order.
-// pick: tap a name from the chat instead of typing one.
 const MODES = Object.fromEntries(Object.entries({
-  friends: { tab: "Jimseng", icon: "💬", bank: MESSAGES, key: "jimchatdle:v7", seed: 20260929, pick: true, kicker: "someone in the chat said…", ask: "Who said it?", by: "Sent by",
+  friends: { tab: "Jimseng", icon: "💬", bank: MESSAGES, key: "jimchatdle:v7", seed: 20260929, kicker: "someone in the chat said…", ask: "Who said it?", by: "Sent by",
     pinned: ["Travis wanted, you know, a secure concert before and after Astroworld Houston", "Has everyone got their secret Santa sorted?"] },
-  movies: { tab: "Movies", icon: "🎬", bank: MOVIES, key: "jimchatdle:movies:v2", seed: 20260930, pick: false, kicker: "a famous movie line…", ask: "Which actor said it?", by: "Said by", pinned: [] },
-  speeches: { tab: "Speeches", icon: "🎤", bank: SPEECHES, key: "jimchatdle:speeches:v2", seed: 20260931, pick: false, kicker: "someone famous once said…", ask: "Who said it?", by: "Said by", pinned: [] },
+  movies: { tab: "Movies", icon: "🎬", bank: MOVIES, key: "jimchatdle:movies:v2", seed: 20260930, kicker: "a famous movie line…", ask: "Which actor said it?", by: "Said by", pinned: [] },
+  speeches: { tab: "Speeches", icon: "🎤", bank: SPEECHES, key: "jimchatdle:speeches:v2", seed: 20260931, kicker: "someone famous once said…", ask: "Who said it?", by: "Said by", pinned: [] },
 }).map(([id, m]) => {
   const pinned = m.pinned.map((text) => m.bank.find((p) => p.text === text));
   const order = [...pinned, ...seededShuffle(m.bank.filter((p) => !pinned.includes(p)), m.seed)];
@@ -667,14 +657,12 @@ function progress(g) {
   };
 }
 
-// Full name, or a surname only one person in the bank has ("hanks" -> Tom Hanks).
-function findName(typed) {
-  const t = lettersOf(typed);
-  if (!t) return null;
-  const exact = M().names.find((n) => lettersOf(n) === t);
-  if (exact) return exact;
-  const bySurname = M().names.filter((n) => lettersOf(n.split(" ").at(-1)) === t);
-  return bySurname.length === 1 ? bySurname[0] : null;
+// Jimseng shows the whole chat. Famous rounds show the answer plus decoys, seeded so everyone gets the same buttons.
+function choicesFor(puzzle) {
+  const m = M();
+  if (m.names.length <= CHOICES) return m.names;
+  const decoys = seededShuffle(m.names.filter((n) => n !== puzzle.from), m.bank.indexOf(puzzle) + 1).slice(0, CHOICES - 1);
+  return [...decoys, puzzle.from].sort();
 }
 
 let game = startDaily();
@@ -817,12 +805,9 @@ function renderTurns(p) {
 }
 
 function renderGuessing(p) {
-  const pick = M().pick;
-  $("names").hidden = p.over || !pick;
-  $("guessForm").hidden = p.over || pick;
+  $("names").hidden = p.over;
   $("skipBtn").hidden = p.over;
   $("skipBtn").textContent = p.lastTurn ? "Give up" : "Skip, show more →";
-  $("guessInput").placeholder = M().ask;
   for (const b of $("names").children) {
     const tried = game.guesses.includes(b.dataset.name);
     b.classList.toggle("wrong", tried);
@@ -845,11 +830,8 @@ function buildModes() {
   }));
 }
 
-// Jimseng taps a face from the chat; the famous rounds type a name with the whole bank as suggestions.
 function buildNames() {
-  const m = M();
-  $("nameList").replaceChildren(...(m.pick ? [] : m.names.map((n) => new Option(n))));
-  $("names").replaceChildren(...(m.pick ? m.names : []).map((name) => {
+  $("names").replaceChildren(...choicesFor(game.puzzle).map((name) => {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "name";
@@ -945,16 +927,6 @@ function shake() {
 // ---- boot ----
 $("helpBtn").addEventListener("click", () => $("help").showModal());
 $("skipBtn").addEventListener("click", () => guess(null));
-$("guessForm").addEventListener("submit", (e) => {
-  e.preventDefault();
-  const typed = $("guessInput").value.trim();
-  if (!typed) return;
-  const name = findName(typed);
-  if (!name) note = `"${typed}" isn't one of the options. Pick a name from the suggestions.`;
-  else if (game.guesses.includes(name)) note = `Already tried ${name}.`;
-  else { $("guessInput").value = ""; guess(name); return; }
-  render();
-});
 $("resetBtn").addEventListener("click", () => {
   if (!confirm(`Wipe today's ${M().tab} round and all your ${M().tab} stats?`)) return;
   try { localStorage.removeItem(M().key); } catch { /* nothing was saved anyway */ }
