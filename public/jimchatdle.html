@@ -80,6 +80,7 @@
   .skip { align-self: center; width: min(100%, 320px); padding: 13px 18px; border: 2px dashed var(--ink-soft); border-radius: 99px; background: none; font-size: .74rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
   .skip:hover { border-style: solid; }
   .names { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
+  .names.wide { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
   .name {
     display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 6px; min-width: 0; text-align: left;
     border: 0; border-radius: 99px; background: #fff; font-weight: 800; font-size: .92rem;
@@ -564,9 +565,42 @@ const HAIR_FRONT = {
   bob: "M13 33 Q12 9 32 9 Q52 9 51 33 L51 25 Q32 27 13 25Z",
 };
 
+const hashOf = (text) => [...text].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) | 0, 0);
+
+// Famous faces: gender and skin tone are set per person, the rest is seeded from the name so it never changes.
+// Anyone not listed here is drawn as a man with light skin.
+const FAMOUS = {
+  "Judy Garland": "f", "Renée Zellweger": "f", "Ellen DeGeneres": "f", "Julia Roberts": "f", "Jennifer Lawrence": "f",
+  "Rachel McAdams": "f", "Alicia Silverstone": "f", "Kate Winslet": "f", "Emma Watson": "f", "Viola Davis": "f deep",
+  "Pat Morita": "m asian", "Vin Diesel": "m olive", "Samuel L. Jackson": "m deep", "Laurence Fishburne": "m deep",
+  "Martin Luther King Jr.": "m brown", "Barack Obama": "m brown", "Nelson Mandela": "m deep", "Muhammad Ali": "m brown",
+  "Michelle Obama": "f brown", "Margaret Thatcher": "f", "Eleanor Roosevelt": "f", "Charlotte Brontë": "f",
+  "Simone de Beauvoir": "f", "Mahatma Gandhi": "m tan", "Lao Tzu": "m asian", "Julius Caesar": "m olive",
+  "Socrates": "m olive", "Archimedes": "m olive",
+};
+const SKIN = {
+  light: ["#f7d8c3", "#f0cfa8", "#eccaa2"], asian: ["#eecba3"], olive: ["#d9a878"],
+  tan: ["#b27c55"], brown: ["#8a5838"], deep: ["#5e3b24"],
+};
+const HAIR = { light: ["#1d1a1f", "#4a3024", "#7a5230", "#c8612b", "#d9b26a", "#8f8f8f"], dark: ["#1d1a1f", "#2b1d14"] };
+function famousLook(name) {
+  const [sex, tone = "light"] = (FAMOUS[name] ?? "m").split(" ");
+  const rand = mulberry32(hashOf(name));
+  const pick = (list) => list[Math.floor(rand() * list.length)];
+  const female = sex === "f";
+  return {
+    skin: pick(SKIN[tone]),
+    hair: pick(tone === "light" ? HAIR.light : HAIR.dark),
+    style: pick(female ? ["long", "bob"] : ["buzz", "widow", "short", "side", "quiff"]),
+    lashes: female,
+    glasses: rand() < 0.2,
+    beard: !female && rand() < 0.2,
+    mustache: !female && rand() < 0.2,
+  };
+}
+
 function chibi(name) {
-  const k = LOOKS[name];
-  if (!k) return null;
+  const k = LOOKS[name] ?? famousLook(name);
   const ink = "#1d1a1f";
   const eye = (x) => `<ellipse cx="${x}" cy="37" rx="2.6" ry="3.4" fill="${ink}"/><circle cx="${x + 0.9}" cy="35.8" r="0.9" fill="#fff"/>`;
   return `<svg viewBox="0 0 64 64" aria-hidden="true">
@@ -634,8 +668,7 @@ const isLetter = (ch) => /\p{L}/u.test(ch);
 // Letters appear at scattered spots on the REVEAL curve (at least one); punctuation and word lengths always show.
 // rank[i] is when the i-th letter appears. It's seeded by the quote itself, so everyone sees the same letters each turn.
 function revealRanks(text) {
-  let seed = 0;
-  for (const ch of text) seed = (seed * 31 + ch.charCodeAt(0)) | 0;
+  const seed = hashOf(text);
   const count = [...text].filter(isLetter).length;
   const rank = [];
   seededShuffle([...Array(count).keys()], seed).forEach((letter, r) => { rank[letter] = r; });
@@ -831,6 +864,7 @@ function buildModes() {
 }
 
 function buildNames() {
+  $("names").classList.toggle("wide", M().id !== "friends"); // full names need more room than first names
   $("names").replaceChildren(...choicesFor(game.puzzle).map((name) => {
     const b = document.createElement("button");
     b.type = "button";
