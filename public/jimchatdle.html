@@ -182,7 +182,7 @@
   <h2>How to play</h2>
   <ol>
     <li>Three rounds a day: <b>Jimseng</b> (the group chat), <b>Movies</b> and <b>Speeches</b>. One quote each.</li>
-    <li>The quote starts with just its first letter or so. Guess who said it.</li>
+    <li>The quote starts with just a few letters scattered through it. Guess who said it.</li>
     <li>A wrong guess or a skip shows more letters. You get 6 turns, and the last one shows the whole thing (plus the film, in Movies).</li>
     <li>The earlier you get it, the more you score: 100, 80, 60, 40, 25, then 10.</li>
     <li>Finish all three for your daily total out of 300, then copy it to the chat.</li>
@@ -641,7 +641,17 @@ function startPractice() {
 
 const isLetter = (ch) => /\p{L}/u.test(ch);
 
-// Letters appear left to right on the REVEAL curve (at least one); punctuation and word lengths always show.
+// Letters appear at scattered spots on the REVEAL curve (at least one); punctuation and word lengths always show.
+// rank[i] is when the i-th letter appears. It's seeded by the quote itself, so everyone sees the same letters each turn.
+function revealRanks(text) {
+  let seed = 0;
+  for (const ch of text) seed = (seed * 31 + ch.charCodeAt(0)) | 0;
+  const count = [...text].filter(isLetter).length;
+  const rank = [];
+  seededShuffle([...Array(count).keys()], seed).forEach((letter, r) => { rank[letter] = r; });
+  return rank;
+}
+
 function progress(g) {
   const words = g.puzzle.text.split(/\s+/);
   const letters = [...g.puzzle.text].filter(isLetter).length;
@@ -649,7 +659,7 @@ function progress(g) {
   const won = g.guesses.includes(g.puzzle.from);
   const over = won || used >= TURNS;
   return {
-    words, used, won, over,
+    words, used, won, over, rank: revealRanks(g.puzzle.text),
     shown: over ? letters : Math.max(1, Math.round(letters * REVEAL[used])),
     lastTurn: !over && used === TURNS - 1,
     turnsLeft: TURNS - used,
@@ -669,7 +679,7 @@ function findName(typed) {
 
 let game = startDaily();
 let note = "";
-let fresh = null; // first letter index revealed by the last turn, for the pop-in
+let fresh = null; // letters revealed before the last turn; later ranks pop in
 let isAdmin = false; // ponytail: in-memory only, re-enter the code after a reload
 
 function load(g) {
@@ -768,9 +778,9 @@ function renderBubble(p) {
     for (const ch of word) {
       const c = document.createElement("span");
       if (!isLetter(ch)) c.textContent = ch;
-      else if (n < p.shown) {
+      else if (p.rank[n] < p.shown) {
         c.textContent = ch;
-        if (fresh !== null && n >= fresh) c.className = "pop";
+        if (fresh !== null && p.rank[n] >= fresh) c.className = "pop";
         n++;
       } else {
         c.className = "slot";
