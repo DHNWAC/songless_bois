@@ -503,7 +503,7 @@ const SPEECHES = [
   ["Archimedes", "Give me a lever long enough and I shall move the world"],
 ].map(([from, text]) => ({ from, text }));
 
-const LAUNCH = new Date(2026, 8, 29); // puzzle #1 in every round (months are 0-based)
+const LAUNCH = new Date(2026, 8, 30); // puzzle #1 in every round (months are 0-based)
 const TURNS = 6;
 const POINTS = [100, 80, 60, 40, 25, 10]; // score for getting it on turn 1, 2, ...
 const CHOICES = 16; // Movies/Speeches show the answer plus 15 decoys, about the size of the chat
@@ -635,10 +635,10 @@ function chibi(name) {
 
 // key: bump when a bank or the save shape changes, or old saves point at new puzzles. pinned: puzzles #1, #2, ... in that order.
 const MODES = Object.fromEntries(Object.entries({
-  friends: { tab: "Jimseng", icon: "💬", bank: MESSAGES, key: "jimchatdle:v7", seed: 20260929, kicker: "someone in the chat said…", ask: "Who said it?", by: "Sent by",
+  friends: { tab: "Jimseng", icon: "💬", bank: MESSAGES, key: "jimchatdle:v8", seed: 20260929, kicker: "someone in the chat said…", ask: "Who said it?", by: "Sent by",
     pinned: ["Travis wanted, you know, a secure concert before and after Astroworld Houston", "Has everyone got their secret Santa sorted?"] },
-  movies: { tab: "Movies", icon: "🎬", bank: MOVIES, key: "jimchatdle:movies:v2", seed: 20260930, kicker: "a famous movie line…", ask: "Which actor said it?", by: "Said by", pinned: [] },
-  speeches: { tab: "Speeches", icon: "🎤", bank: SPEECHES, key: "jimchatdle:speeches:v2", seed: 20260931, kicker: "someone famous once said…", ask: "Who said it?", by: "Said by", pinned: [] },
+  movies: { tab: "Movies", icon: "🎬", bank: MOVIES, key: "jimchatdle:movies:v3", seed: 20260930, kicker: "a famous movie line…", ask: "Which actor said it?", by: "Said by", pinned: [] },
+  speeches: { tab: "Speeches", icon: "🎤", bank: SPEECHES, key: "jimchatdle:speeches:v3", seed: 20260931, kicker: "someone famous once said…", ask: "Who said it?", by: "Said by", pinned: [] },
 }).map(([id, m]) => {
   const pinned = m.pinned.map((text) => m.bank.find((p) => p.text === text));
   const order = [...pinned, ...seededShuffle(m.bank.filter((p) => !pinned.includes(p)), m.seed)];
